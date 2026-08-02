@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: daertech-platform
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/daertech_platform}
+    username: ${SPRING_DATASOURCE_USERNAME:daertech}
+    password: ${SPRING_DATASOURCE_PASSWORD:daertech}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: platform
+  flyway:
+    enabled: true
+    schemas: platform
+    default-schema: platform
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,env
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+info:
+  app:
+    name: DAERTECH Platform
+    version: 0.1.0
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:CHANGE_ME_AT_LEAST_64_CHARACTERS}
+    access-minutes: ${APP_JWT_ACCESS_MINUTES:15}
+    refresh-days: ${APP_JWT_REFRESH_DAYS:7}
+  admin:
+    name: ${APP_ADMIN_NAME:Administrator}
+    email: ${APP_ADMIN_EMAIL:admin@daertechglobal.com}
+    username: ${APP_ADMIN_USERNAME:admin}
+    password: ${APP_ADMIN_PASSWORD:CHANGE_ME}
+logging:
+  pattern:
+    console: '{"time":"%d{yyyy-MM-dd''T''HH:mm:ss.SSSXXX}","level":"%level","logger":"%logger{36}","thread":"%thread","message":"%replace(%message){''"'',''\\"''}%n"}'
