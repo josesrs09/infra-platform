@@ -1,0 +1,41 @@
+services:
+  crowdsec:
+    image: crowdsecurity/crowdsec:v1.6.4
+    container_name: infra-crowdsec
+    restart: unless-stopped
+    environment:
+      COLLECTIONS: crowdsecurity/traefik crowdsecurity/linux crowdsecurity/sshd
+      TZ: ${TZ}
+    volumes:
+      - ./data/crowdsec:/var/lib/crowdsec/data
+      - ./config/crowdsec:/etc/crowdsec
+      - ../proxy/logs:/var/log/traefik:ro
+      - /var/log:/var/log/host:ro
+    networks:
+      - security
+      - proxy
+
+  fail2ban:
+    image: crazymax/fail2ban:1.1.0
+    container_name: infra-fail2ban
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      TZ: ${TZ}
+      F2B_LOG_TARGET: STDOUT
+      F2B_LOG_LEVEL: INFO
+    volumes:
+      - ./data/fail2ban:/data
+      - ./config/fail2ban:/etc/fail2ban:ro
+      - /var/log:/var/log:ro
+
+networks:
+  security:
+    external: true
+    name: infra_security
+  proxy:
+    external: true
+    name: infra_proxy
