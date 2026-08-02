@@ -1,0 +1,13 @@
+.env
+*.local
+*.log
+.DS_Store
+.idea/
+.vscode/
+proxy/letsencrypt/acme.json
+proxy/logs/*
+!proxy/logs/.gitkeep
+backups/data/*
+!backups/data/.gitkeep
+secrets/*
+!secrets/.gitkeep
