@@ -11,8 +11,8 @@ services:
       - "1883:1883"
       - "8883:8883"
     volumes:
-      - emqx_data:/opt/emqx/data
-      - emqx_log:/opt/emqx/log
+      - ./data/emqx:/opt/emqx/data
+      - ./logs/emqx:/opt/emqx/log
     networks:
       - messaging
       - proxy
@@ -33,7 +33,7 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - ./data/rabbitmq:/var/lib/rabbitmq
     networks:
       - messaging
       - proxy
@@ -44,11 +44,6 @@ services:
       - traefik.http.routers.rabbitmq.entrypoints=websecure
       - traefik.http.routers.rabbitmq.tls.certresolver=letsencrypt
       - traefik.http.services.rabbitmq.loadbalancer.server.port=15672
-
-volumes:
-  emqx_data:
-  emqx_log:
-  rabbitmq_data:
 
 networks:
   messaging:
