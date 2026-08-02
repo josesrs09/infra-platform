@@ -1,0 +1,37 @@
+http:
+  middlewares:
+    dashboard-auth:
+      basicAuth:
+        users:
+          - "admin:$2y$05$CHANGE_THIS_BCRYPT_HASH"
+        removeHeader: true
+
+    security-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+        referrerPolicy: strict-origin-when-cross-origin
+        permissionsPolicy: "camera=(), microphone=(), geolocation=(), payment=()"
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        customResponseHeaders:
+          X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex"
+          Server: ""
+
+    gzip:
+      compress: {}
+
+    api-ratelimit:
+      rateLimit:
+        average: 100
+        burst: 200
+        period: 1s
+
+    secure-chain:
+      chain:
+        middlewares:
+          - security-headers
+          - gzip
+          - api-ratelimit
