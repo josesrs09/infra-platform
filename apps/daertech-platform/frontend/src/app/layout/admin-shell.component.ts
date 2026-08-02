@@ -22,6 +22,7 @@ import { AuthSessionService } from '../core/auth-session.service';
         <a routerLink="/users" routerLinkActive="active">Usuarios</a>
         <a routerLink="/roles" routerLinkActive="active">Roles</a>
         <a routerLink="/permissions" routerLinkActive="active">Permisos</a>
+        <a routerLink="/configuration" routerLinkActive="active">Configuración</a>
         <a routerLink="/monitoring" routerLinkActive="active">Monitoreo</a>
         <a routerLink="/legacy" routerLinkActive="active">Administración heredada</a>
       </nav>
