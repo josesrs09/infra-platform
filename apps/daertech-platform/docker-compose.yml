@@ -58,6 +58,7 @@ services:
       APP_DEPLOYMENT_WORKSPACE_ROOT: /opt/infra-platform/workspaces
       APP_DEPLOYMENT_EXECUTION_ENABLED: ${DEPLOYMENT_EXECUTION_ENABLED:-false}
       APP_DEPLOYMENT_COMMAND_TIMEOUT_SECONDS: ${DEPLOYMENT_COMMAND_TIMEOUT_SECONDS:-900}
+      APP_DEPLOYMENT_TRAEFIK_DYNAMIC_ROOT: ${DEPLOYMENT_TRAEFIK_DYNAMIC_ROOT:-/opt/infra-platform/traefik/dynamic}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       APP_ADMIN_NAME: ${ADMIN_NAME}
@@ -71,6 +72,7 @@ services:
       - ./backups/configuration:/opt/daertech/config/backups
       - ./managed-config:/opt/daertech/config/managed
       - ./workspaces:/opt/infra-platform/workspaces
+      - ${TRAEFIK_DYNAMIC_HOST_DIR:-./traefik/dynamic}:/opt/infra-platform/traefik/dynamic
       - /var/run/docker.sock:/var/run/docker.sock
       - ${SSH_DEPLOY_KEYS_DIR:-./secrets/ssh}:/home/app/.ssh:ro
     ports:
