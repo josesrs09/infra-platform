@@ -1,32 +1,14 @@
-# Resumen del Pull Request
+# Resumen del PR
 
-## Implementado
+DAERTECH Platform incorpora actualmente:
 
-- Fundación Spring Boot 3.5, Java 21, Angular 20, PostgreSQL 17, Redis 8 y Docker Compose.
-- JWT, refresh tokens, revocación, RBAC, usuarios, roles, permisos y auditoría.
-- Configuration Center por ambiente, categoría y tipo.
-- Secretos cifrados con AES-256-GCM.
-- Historial, validación, rollback lógico, exportación `.env` y YAML.
-- Validadores HTTP, HTTPS, REST, SOAP, TCP, PostgreSQL, MySQL, Redis, RabbitMQ, MQTT, SMTP, MinIO y Telegram.
-- Plantillas y perfiles reutilizables por servicio y ambiente.
-- Aplicación controlada dentro de un directorio permitido.
-- Respaldo automático, escritura atómica y checksums SHA-256.
-- Rollback de archivos administrados.
-- Notificaciones Telegram para aplicación y reversión.
+- Fundación Angular 20, Spring Boot 3.5, PostgreSQL 17 y Redis 8.
+- Autenticación JWT, refresh tokens, RBAC, usuarios, roles, permisos y auditoría.
+- Configuration Center con cifrado, historial, validación, exportación, plantillas, aplicación y rollback.
+- Applications Center para repositorios, tecnologías, ambientes, variables, dependencias, puertos, health checks, métricas y versiones.
+- Docker Compose con persistencia mediante bind mounts.
+- Documentación de puesta en marcha y cambios manuales.
 
-## Cambios manuales obligatorios
+## Estado
 
-- Configurar `JWT_SECRET`.
-- Configurar `ADMIN_PASSWORD`.
-- Configurar y conservar `CONFIG_ENCRYPTION_KEY`.
-- Configurar `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` cuando se requieran alertas.
-- Crear y proteger `generated`, `managed-config` y `backups/configuration`.
-- Asignar `CONFIG_APPLY` exclusivamente a operadores autorizados.
-- Validar sintaxis y recargar manualmente el servicio después de aplicar o revertir archivos.
-
-## Pendiente
-
-- Applications Center.
-- Deployment Center.
-- Integración completa con observabilidad y respaldos.
-- Pruebas automatizadas y CI/CD.
+El PR permanece en borrador porque faltan el Deployment Center, integraciones operativas, pruebas automáticas y validación completa de compilación y despliegue.
