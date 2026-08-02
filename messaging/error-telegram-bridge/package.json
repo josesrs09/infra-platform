@@ -1,0 +1,9 @@
+{
+  "name": "error-telegram-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "amqplib": "0.10.5"
+  }
+}
