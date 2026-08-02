@@ -1,5 +1,11 @@
 http:
   middlewares:
+    admin-auth:
+      basicAuth:
+        users:
+          - "admin:$2y$05$CHANGE_THIS_BCRYPT_HASH"
+        removeHeader: true
+
     dashboard-auth:
       basicAuth:
         users:
@@ -32,6 +38,14 @@ http:
     secure-chain:
       chain:
         middlewares:
+          - security-headers
+          - gzip
+          - api-ratelimit
+
+    admin-chain:
+      chain:
+        middlewares:
+          - admin-auth
           - security-headers
           - gzip
           - api-ratelimit
