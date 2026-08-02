@@ -58,11 +58,28 @@ public class ApplicationService {
     }
 
     @Transactional
-    public Map<String,Object> addVersion(UUID appId,VersionRequest r,String actor){
-        jdbc.update("INSERT INTO platform.application_versions(id,application_id,version,git_commit,image_tag,notes,created_by) VALUES(?,?,?,?,?,?,?)",
-            UUID.randomUUID(),appId,r.version(),r.gitCommit(),r.imageTag(),r.notes(),actor);
+    public Map<String,Object> saveDependency(UUID appId,DependencyRequest r){
+        if(r.type()==null||r.type().isBlank()||r.name()==null||r.name().isBlank()) throw new IllegalArgumentException("Tipo y nombre de dependencia son obligatorios");
+        UUID id=r.id()==null?UUID.randomUUID():r.id();
+        int updated=jdbc.update("UPDATE platform.application_dependencies SET dependency_type=?,dependency_name=?,target=?,required=? WHERE id=? AND application_id=?",
+            upper(r.type()),r.name().trim(),r.target(),r.required(),id,appId);
+        if(updated==0) jdbc.update("INSERT INTO platform.application_dependencies(id,application_id,dependency_type,dependency_name,target,required) VALUES(?,?,?,?,?,?)",
+            id,appId,upper(r.type()),r.name().trim(),r.target(),r.required());
         return find(appId);
     }
+
+    @Transactional
+    public Map<String,Object> addVersion(UUID appId,VersionRequest r,String actor){
+        if(r.version()==null||r.version().isBlank()) throw new IllegalArgumentException("La versión es obligatoria");
+        jdbc.update("INSERT INTO platform.application_versions(id,application_id,version,git_commit,image_tag,notes,created_by) VALUES(?,?,?,?,?,?,?)",
+            UUID.randomUUID(),appId,r.version().trim(),r.gitCommit(),r.imageTag(),r.notes(),actor);
+        return find(appId);
+    }
+
+    @Transactional public Map<String,Object> deleteEnvironment(UUID appId,UUID id){ jdbc.update("DELETE FROM platform.application_environments WHERE id=? AND application_id=?",id,appId);return find(appId); }
+    @Transactional public Map<String,Object> deleteVariable(UUID appId,UUID id){ jdbc.update("DELETE FROM platform.application_variables WHERE id=? AND application_id=?",id,appId);return find(appId); }
+    @Transactional public Map<String,Object> deleteDependency(UUID appId,UUID id){ jdbc.update("DELETE FROM platform.application_dependencies WHERE id=? AND application_id=?",id,appId);return find(appId); }
+    @Transactional public Map<String,Object> deleteVersion(UUID appId,UUID id){ jdbc.update("DELETE FROM platform.application_versions WHERE id=? AND application_id=?",id,appId);return find(appId); }
 
     private void validate(ApplicationRequest r){
         if(r.code()==null||r.code().isBlank()||r.name()==null||r.name().isBlank()||r.repositoryUrl()==null||r.repositoryUrl().isBlank()||r.technology()==null||r.technology().isBlank())
@@ -74,5 +91,6 @@ public class ApplicationService {
     public record ApplicationRequest(UUID id,String code,String name,String description,String repositoryUrl,String defaultBranch,String technology,String buildTool,String dockerfilePath,String contextPath,Integer internalPort,String healthPath,String metricsPath,boolean active){}
     public record EnvironmentRequest(UUID id,String environment,String branch,String publicUrl,int replicas,String cpuLimit,String memoryLimit,boolean enabled){}
     public record VariableRequest(UUID id,String environment,String key,String value,boolean secret,boolean required,String description){}
+    public record DependencyRequest(UUID id,String type,String name,String target,boolean required){}
     public record VersionRequest(String version,String gitCommit,String imageTag,String notes){}
 }
