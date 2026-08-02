@@ -1,25 +1,21 @@
 # Changelog
 
-## 0.4.0 — Plantillas y aplicación controlada
+## 0.4.0 — Applications Center
 
-- Plantillas reutilizables por servicio.
-- Perfiles de configuración por ambiente.
-- Aplicación controlada dentro de un directorio permitido.
-- Respaldo automático previo a cada cambio.
-- Escritura atómica mediante archivo temporal.
-- Checksums SHA-256 antes y después.
-- Historial de aplicaciones y rollback de archivos.
-- Notificaciones Telegram para aplicación y reversión.
-- Permisos `CONFIG_TEMPLATE` y `CONFIG_APPLY`.
+- Catálogo de aplicaciones y repositorios Git.
+- Tecnologías, build tools, Dockerfile, contexto, puertos, health y métricas.
+- Configuración por ambiente, variables, dependencias y versiones.
+- Permisos `APPLICATION_READ` y `APPLICATION_WRITE`.
+- API administrativa e interfaz Angular del Applications Center.
 
-## 0.3.0 — Configuration Center operativo
+## 0.3.0 — Configuration Center
 
-- Configuración por ambiente, categoría y tipo.
+- Configuración por ambientes y categorías.
 - Secretos cifrados con AES-256-GCM.
-- Historial, validación y rollback lógico.
-- Formularios Angular dinámicos.
+- Historial, validación, rollback, exportación `.env` y YAML.
 - Validadores de conectividad.
-- Exportación `.env` y YAML.
+- Plantillas, perfiles, aplicación controlada, backups y rollback de archivos.
+- Notificaciones Telegram.
 
 ## 0.2.0 — Seguridad administrativa
 
