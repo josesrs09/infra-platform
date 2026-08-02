@@ -56,7 +56,91 @@ services:
       timeout: 5s
       retries: 10
 
+  pgadmin:
+    image: dpage/pgadmin4:9.1
+    container_name: infra-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "True"
+      PGADMIN_CONFIG_LOGIN_BANNER: "Infra Platform - acceso administrativo"
+    volumes:
+      - ./data/pgadmin:/var/lib/pgadmin
+    networks:
+      - database
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=infra_proxy
+      - traefik.http.routers.pgadmin.rule=Host(`${PGADMIN_HOST}`)
+      - traefik.http.routers.pgadmin.entrypoints=websecure
+      - traefik.http.routers.pgadmin.tls.certresolver=letsencrypt
+      - traefik.http.routers.pgadmin.middlewares=admin-chain@file
+      - traefik.http.services.pgadmin.loadbalancer.server.port=80
+
+  phpmyadmin:
+    image: phpmyadmin:5.2.2-apache
+    container_name: infra-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: infra-mysql
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 256M
+    networks:
+      - database
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=infra_proxy
+      - traefik.http.routers.phpmyadmin.rule=Host(`${PHPMYADMIN_HOST}`)
+      - traefik.http.routers.phpmyadmin.entrypoints=websecure
+      - traefik.http.routers.phpmyadmin.tls.certresolver=letsencrypt
+      - traefik.http.routers.phpmyadmin.middlewares=admin-chain@file
+      - traefik.http.services.phpmyadmin.loadbalancer.server.port=80
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: infra-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:infra-redis:6379:0:${REDIS_PASSWORD}
+      HTTP_USER: ${REDIS_COMMANDER_USER}
+      HTTP_PASSWORD: ${REDIS_COMMANDER_PASSWORD}
+    networks:
+      - database
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=infra_proxy
+      - traefik.http.routers.rediscommander.rule=Host(`${REDIS_COMMANDER_HOST}`)
+      - traefik.http.routers.rediscommander.entrypoints=websecure
+      - traefik.http.routers.rediscommander.tls.certresolver=letsencrypt
+      - traefik.http.routers.rediscommander.middlewares=admin-chain@file
+      - traefik.http.services.rediscommander.loadbalancer.server.port=8081
+
+  adminer:
+    image: adminer:5.3.0
+    container_name: infra-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: infra-postgres
+    networks:
+      - database
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=infra_proxy
+      - traefik.http.routers.adminer.rule=Host(`${ADMINER_HOST}`)
+      - traefik.http.routers.adminer.entrypoints=websecure
+      - traefik.http.routers.adminer.tls.certresolver=letsencrypt
+      - traefik.http.routers.adminer.middlewares=admin-chain@file
+      - traefik.http.services.adminer.loadbalancer.server.port=8080
+
 networks:
   database:
     external: true
     name: infra_database
+  proxy:
+    external: true
+    name: infra_proxy
