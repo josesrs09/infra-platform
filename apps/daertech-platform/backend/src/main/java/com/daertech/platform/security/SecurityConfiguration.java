@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 public class SecurityConfiguration {
     @Bean SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter converter) throws Exception {
         return http.csrf(csrf->csrf.disable()).cors(cors->{}).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth->auth.requestMatchers("/auth/**","/actuator/health/**","/actuator/info").permitAll().anyRequest().authenticated())
+            .authorizeHttpRequests(auth->auth.requestMatchers("/auth/**","/actuator/health/**","/actuator/info","/internal/alerts/alertmanager").permitAll().anyRequest().authenticated())
             .oauth2ResourceServer(oauth->oauth.jwt(jwt->jwt.jwtAuthenticationConverter(converter))).build();
     }
     @Bean PasswordEncoder passwordEncoder(){return new BCryptPasswordEncoder(12);}
