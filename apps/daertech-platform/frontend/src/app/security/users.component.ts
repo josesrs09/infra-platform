@@ -34,7 +34,7 @@ export class UsersComponent implements OnInit {
   ngOnInit(): void { this.load(); this.service.roles().subscribe(r=>this.roles.set(r)); }
   load(): void { this.service.users().subscribe({next:r=>this.users.set(r),error:e=>this.notify(e,true)}); }
   save(): void { this.busy.set(true); const request=this.editingId?this.service.updateUser(this.editingId,this.form):this.service.createUser(this.form); request.subscribe({next:()=>{this.notify('Usuario guardado');this.reset();this.load();},error:e=>this.notify(e,true),complete:()=>this.busy.set(false)}); }
-  edit(user: PlatformUser): void { this.editingId=user.id; this.form={username:user.username,email:user.email,fullName:user.full_name,password:'',enabled:user.enabled,locked:user.locked,roleIds:[]}; }
+  edit(user: PlatformUser): void { this.busy.set(true); this.service.user(user.id).subscribe({next:detail=>{this.editingId=detail.id;this.form={username:detail.username,email:detail.email,fullName:detail.full_name,password:'',enabled:detail.enabled,locked:detail.locked,roleIds:detail.roleIds||[]};this.busy.set(false);},error:e=>this.notify(e,true)}); }
   remove(user: PlatformUser): void { if(!confirm(`Eliminar el usuario ${user.username}?`)) return; this.service.deleteUser(user.id).subscribe({next:()=>{this.notify('Usuario eliminado');this.load();},error:e=>this.notify(e,true)}); }
   reset(): void { this.editingId=null; this.form={username:'',email:'',fullName:'',password:'',enabled:true,locked:false,roleIds:[]}; }
   hasRole(id:string): boolean { return this.form.roleIds.includes(id); }
