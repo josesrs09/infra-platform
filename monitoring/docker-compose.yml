@@ -19,6 +19,7 @@ services:
       - traefik.http.routers.prometheus.rule=Host(`${PROMETHEUS_HOST}`)
       - traefik.http.routers.prometheus.entrypoints=websecure
       - traefik.http.routers.prometheus.tls.certresolver=letsencrypt
+      - traefik.http.routers.prometheus.middlewares=admin-chain@file
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
   grafana:
@@ -40,6 +41,7 @@ services:
       - traefik.http.routers.grafana.rule=Host(`${GRAFANA_HOST}`)
       - traefik.http.routers.grafana.entrypoints=websecure
       - traefik.http.routers.grafana.tls.certresolver=letsencrypt
+      - traefik.http.routers.grafana.middlewares=admin-chain@file
       - traefik.http.services.grafana.loadbalancer.server.port=3000
 
   alertmanager:
