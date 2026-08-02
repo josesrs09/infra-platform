@@ -55,6 +55,9 @@ services:
       APP_JWT_REFRESH_DAYS: ${JWT_REFRESH_DAYS:-7}
       APP_CONFIG_ENCRYPTION_KEY: ${CONFIG_ENCRYPTION_KEY}
       APP_CONFIG_ALLOWED_ROOT: /opt/daertech/config
+      APP_DEPLOYMENT_WORKSPACE_ROOT: /opt/infra-platform/workspaces
+      APP_DEPLOYMENT_EXECUTION_ENABLED: ${DEPLOYMENT_EXECUTION_ENABLED:-false}
+      APP_DEPLOYMENT_COMMAND_TIMEOUT_SECONDS: ${DEPLOYMENT_COMMAND_TIMEOUT_SECONDS:-900}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       APP_ADMIN_NAME: ${ADMIN_NAME}
@@ -65,6 +68,7 @@ services:
       - ./generated:/opt/daertech/config/generated
       - ./backups/configuration:/opt/daertech/config/backups
       - ./managed-config:/opt/daertech/config/managed
+      - ./workspaces:/opt/infra-platform/workspaces
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     networks: [platform]
