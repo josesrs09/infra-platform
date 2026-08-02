@@ -1,0 +1,57 @@
+services:
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: infra-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
+    networks:
+      - logging
+      - monitoring
+
+  alloy:
+    image: grafana/alloy:v1.7.4
+    container_name: infra-alloy
+    restart: unless-stopped
+    command: run /etc/alloy/config.alloy
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - logging
+
+  dozzle:
+    image: amir20/dozzle:v8.11.2
+    container_name: infra-dozzle
+    restart: unless-stopped
+    environment:
+      DOZZLE_LEVEL: info
+      DOZZLE_NO_ANALYTICS: "true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=infra_proxy
+      - traefik.http.routers.dozzle.rule=Host(`${DOZZLE_HOST}`)
+      - traefik.http.routers.dozzle.entrypoints=websecure
+      - traefik.http.routers.dozzle.tls.certresolver=letsencrypt
+      - traefik.http.services.dozzle.loadbalancer.server.port=8080
+
+volumes:
+  loki_data:
+
+networks:
+  logging:
+    external: true
+    name: infra_logging
+  monitoring:
+    external: true
+    name: infra_monitoring
+  proxy:
+    external: true
+    name: infra_proxy
