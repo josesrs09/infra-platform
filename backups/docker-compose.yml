@@ -10,12 +10,20 @@ services:
       - ../:/source:ro
       - ./repository:/repository
       - ./cache:/root/.cache/restic
+      - ./scripts/backup.sh:/scripts/backup.sh:ro
     entrypoint: ["/bin/sh", "/scripts/backup.sh"]
-    volumes_from: []
-    configs:
-      - source: backup_script
-        target: /scripts/backup.sh
 
-configs:
-  backup_script:
-    file: ./scripts/backup.sh
+  restic-restore:
+    image: restic/restic:0.17.3
+    container_name: infra-restic-restore
+    restart: "no"
+    profiles: ["restore"]
+    environment:
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY}
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD}
+    volumes:
+      - ./repository:/repository:ro
+      - ./cache:/root/.cache/restic
+      - ./restore:/restore
+      - ./scripts/restore.sh:/scripts/restore.sh:ro
+    entrypoint: ["/bin/sh", "/scripts/restore.sh"]
