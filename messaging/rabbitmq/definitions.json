@@ -1,0 +1,19 @@
+{
+  "vhosts": [{"name": "/"}],
+  "exchanges": [
+    {"name": "app.errors", "vhost": "/", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {}},
+    {"name": "app.errors.dlx", "vhost": "/", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {}}
+  ],
+  "queues": [
+    {"name": "app.errors.critical", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {"x-dead-letter-exchange": "app.errors.dlx", "x-queue-type": "quorum"}},
+    {"name": "app.errors.warning", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {"x-dead-letter-exchange": "app.errors.dlx", "x-queue-type": "quorum"}},
+    {"name": "app.errors.info", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {"x-dead-letter-exchange": "app.errors.dlx", "x-queue-type": "quorum"}},
+    {"name": "app.errors.dead", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {"x-queue-type": "quorum"}}
+  ],
+  "bindings": [
+    {"source": "app.errors", "vhost": "/", "destination": "app.errors.critical", "destination_type": "queue", "routing_key": "*.critical", "arguments": {}},
+    {"source": "app.errors", "vhost": "/", "destination": "app.errors.warning", "destination_type": "queue", "routing_key": "*.warning", "arguments": {}},
+    {"source": "app.errors", "vhost": "/", "destination": "app.errors.info", "destination_type": "queue", "routing_key": "*.info", "arguments": {}},
+    {"source": "app.errors.dlx", "vhost": "/", "destination": "app.errors.dead", "destination_type": "queue", "routing_key": "#", "arguments": {}}
+  ]
+}
