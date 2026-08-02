@@ -105,10 +105,17 @@ services:
     image: prom/mysqld-exporter:v0.17.2
     container_name: infra-mysqld-exporter
     restart: unless-stopped
-    command:
-      - --config.my-cnf=/cfg/.my.cnf
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    entrypoint: ["/bin/sh", "-ec"]
+    command: |
+      sed -e "s|__MYSQL_USER__|$${MYSQL_USER}|g" \
+          -e "s|__MYSQL_PASSWORD__|$${MYSQL_PASSWORD}|g" \
+          /cfg/.my.cnf.template > /tmp/.my.cnf
+      exec /bin/mysqld_exporter --config.my-cnf=/tmp/.my.cnf
     volumes:
-      - ./exporters/mysql/.my.cnf:/cfg/.my.cnf:ro
+      - ./exporters/mysql/.my.cnf:/cfg/.my.cnf.template:ro
     networks: [monitoring, database]
 
   redis-exporter:
