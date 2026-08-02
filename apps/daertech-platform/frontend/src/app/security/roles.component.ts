@@ -31,7 +31,7 @@ export class RolesComponent implements OnInit {
   ngOnInit():void{this.load();this.service.permissions().subscribe(r=>this.permissions.set(r));}
   load():void{this.service.roles().subscribe({next:r=>this.roles.set(r),error:e=>this.notify(e,true)});}
   save():void{this.busy.set(true);const request=this.editingId?this.service.updateRole(this.editingId,this.form):this.service.createRole(this.form);request.subscribe({next:()=>{this.notify('Rol guardado');this.reset();this.load();},error:e=>this.notify(e,true),complete:()=>this.busy.set(false)});}
-  edit(role:PlatformRole):void{this.editingId=role.id;this.form={code:role.code,name:role.name,description:role.description||'',active:role.active,permissionIds:[]};}
+  edit(role:PlatformRole):void{this.busy.set(true);this.service.role(role.id).subscribe({next:detail=>{this.editingId=detail.id;this.form={code:detail.code,name:detail.name,description:detail.description||'',active:detail.active,permissionIds:detail.permissionIds||[]};this.busy.set(false);},error:e=>this.notify(e,true)});}
   remove(role:PlatformRole):void{if(!confirm(`Eliminar el rol ${role.code}?`))return;this.service.deleteRole(role.id).subscribe({next:()=>{this.notify('Rol eliminado');this.load();},error:e=>this.notify(e,true)});}
   reset():void{this.editingId=null;this.form={code:'',name:'',description:'',active:true,permissionIds:[]};}
   hasPermission(id:string):boolean{return this.form.permissionIds.includes(id);}
