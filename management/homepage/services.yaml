@@ -1,0 +1,49 @@
+- Administración:
+    - Portainer:
+        href: https://portainer.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Gestión de contenedores y stacks
+    - Uptime Kuma:
+        href: https://uptime.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Disponibilidad y certificados
+    - Traefik:
+        href: https://traefik.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Proxy reverso y rutas
+    - Logs:
+        href: https://logs.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Visor de logs Docker
+
+- Observabilidad:
+    - Grafana:
+        href: https://grafana.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Dashboards e indicadores
+    - Prometheus:
+        href: https://prometheus.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Métricas y consultas
+
+- Bases de datos:
+    - pgAdmin:
+        href: https://pgadmin.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Administración PostgreSQL
+    - phpMyAdmin:
+        href: https://phpmyadmin.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Administración MySQL
+    - Redis Commander:
+        href: https://redis.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Administración Redis
+    - Adminer:
+        href: https://adminer.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Visor SQL alternativo
+
+- Servicios:
+    - MinIO:
+        href: https://minio.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Almacenamiento S3
+    - EMQX:
+        href: https://mqtt.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Broker MQTT
+    - RabbitMQ:
+        href: https://rabbitmq.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Colas y mensajería
+    - Gitea:
+        href: https://git.{{HOMEPAGE_VAR_DOMAIN}}
+        description: Repositorios y CI/CD
