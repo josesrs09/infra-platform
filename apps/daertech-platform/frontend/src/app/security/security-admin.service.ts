@@ -10,6 +10,7 @@ export interface PlatformUser {
   enabled: boolean;
   locked: boolean;
   last_login_at?: string | null;
+  roleIds?: string[];
 }
 
 export interface PlatformRole {
@@ -18,6 +19,7 @@ export interface PlatformRole {
   name: string;
   description?: string | null;
   active: boolean;
+  permissionIds?: string[];
 }
 
 export interface PlatformPermission {
@@ -50,11 +52,13 @@ export class SecurityAdminService {
   constructor(private readonly api: ApiClientService) {}
 
   users(): Observable<PlatformUser[]> { return this.api.get('/admin/users'); }
+  user(id: string): Observable<PlatformUser> { return this.api.get(`/admin/users/${id}`); }
   createUser(payload: UserPayload): Observable<{ id: string }> { return this.api.post('/admin/users', payload); }
   updateUser(id: string, payload: UserPayload): Observable<void> { return this.api.put(`/admin/users/${id}`, payload); }
   deleteUser(id: string): Observable<void> { return this.api.delete(`/admin/users/${id}`); }
 
   roles(): Observable<PlatformRole[]> { return this.api.get('/admin/roles'); }
+  role(id: string): Observable<PlatformRole> { return this.api.get(`/admin/roles/${id}`); }
   createRole(payload: RolePayload): Observable<{ id: string }> { return this.api.post('/admin/roles', payload); }
   updateRole(id: string, payload: RolePayload): Observable<void> { return this.api.put(`/admin/roles/${id}`, payload); }
   deleteRole(id: string): Observable<void> { return this.api.delete(`/admin/roles/${id}`); }
