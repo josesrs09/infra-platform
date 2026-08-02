@@ -32,6 +32,15 @@ public class SecurityAdminController {
         return jdbc.queryForList("SELECT id,username,email,full_name,enabled,locked,last_login_at,created_at,updated_at FROM platform.users ORDER BY username");
     }
 
+    @GetMapping("/users/{id}") @PreAuthorize("hasAuthority('USER_READ')")
+    public Map<String,Object> user(@PathVariable UUID id){
+        List<Map<String,Object>> rows=jdbc.queryForList("SELECT id,username,email,full_name,enabled,locked,last_login_at,created_at,updated_at FROM platform.users WHERE id=?",id);
+        if(rows.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Usuario no encontrado");
+        Map<String,Object> result=new LinkedHashMap<>(rows.getFirst());
+        result.put("roleIds",jdbc.queryForList("SELECT role_id FROM platform.user_roles WHERE user_id=? ORDER BY role_id",UUID.class,id));
+        return result;
+    }
+
     @PostMapping("/users") @ResponseStatus(HttpStatus.CREATED) @PreAuthorize("hasAuthority('USER_CREATE')")
     public Map<String,Object> createUser(@Valid @RequestBody UserRequest request){
         UUID id=UUID.randomUUID();
@@ -57,6 +66,15 @@ public class SecurityAdminController {
 
     @GetMapping("/roles") @PreAuthorize("hasAuthority('ROLE_READ')")
     public List<Map<String,Object>> roles(){ return jdbc.queryForList("SELECT id,code,name,description,active,created_at FROM platform.roles ORDER BY code"); }
+
+    @GetMapping("/roles/{id}") @PreAuthorize("hasAuthority('ROLE_READ')")
+    public Map<String,Object> role(@PathVariable UUID id){
+        List<Map<String,Object>> rows=jdbc.queryForList("SELECT id,code,name,description,active,created_at FROM platform.roles WHERE id=?",id);
+        if(rows.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Rol no encontrado");
+        Map<String,Object> result=new LinkedHashMap<>(rows.getFirst());
+        result.put("permissionIds",jdbc.queryForList("SELECT permission_id FROM platform.role_permissions WHERE role_id=? ORDER BY permission_id",UUID.class,id));
+        return result;
+    }
 
     @PostMapping("/roles") @ResponseStatus(HttpStatus.CREATED) @PreAuthorize("hasAuthority('ROLE_CREATE')")
     public Map<String,Object> createRole(@Valid @RequestBody RoleRequest request){
