@@ -6,6 +6,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
@@ -83,7 +85,8 @@ public class AuthService {
         String scope = auth.getAuthorities().stream().map(a -> a.getAuthority()).sorted().collect(Collectors.joining(" "));
         var claims = JwtClaimsSet.builder().issuer("daertech-platform").issuedAt(now)
             .expiresAt(now.plusSeconds(accessMinutes * 60)).subject(auth.getName()).claim("scope", scope).build();
-        String access = jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+        var header = JwsHeader.with(MacAlgorithm.HS256).build();
+        String access = jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
         return Map.of("tokenType", "Bearer", "accessToken", access,
             "expiresIn", accessMinutes * 60, "refreshToken", refresh);
     }
