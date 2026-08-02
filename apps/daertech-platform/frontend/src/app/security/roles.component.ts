@@ -29,12 +29,17 @@ export class RolesComponent implements OnInit {
   editingId:string|null=null; form:RolePayload={code:'',name:'',description:'',active:true,permissionIds:[]};
   constructor(private readonly service:SecurityAdminService){}
   ngOnInit():void{this.load();this.service.permissions().subscribe(r=>this.permissions.set(r));}
-  load():void{this.service.roles().subscribe({next:r=>this.roles.set(r),error:e=>this.notify(e,true)});}
-  save():void{this.busy.set(true);const request=this.editingId?this.service.updateRole(this.editingId,this.form):this.service.createRole(this.form);request.subscribe({next:()=>{this.notify('Rol guardado');this.reset();this.load();},error:e=>this.notify(e,true),complete:()=>this.busy.set(false)});}
-  edit(role:PlatformRole):void{this.busy.set(true);this.service.role(role.id).subscribe({next:detail=>{this.editingId=detail.id;this.form={code:detail.code,name:detail.name,description:detail.description||'',active:detail.active,permissionIds:detail.permissionIds||[]};this.busy.set(false);},error:e=>this.notify(e,true)});}
-  remove(role:PlatformRole):void{if(!confirm(`Eliminar el rol ${role.code}?`))return;this.service.deleteRole(role.id).subscribe({next:()=>{this.notify('Rol eliminado');this.load();},error:e=>this.notify(e,true)});}
+  load():void{this.service.roles().subscribe({next:r=>this.roles.set(r),error:(e:unknown)=>this.notify(e,true)});}
+  save():void{
+    this.busy.set(true);
+    const observer={next:()=>{this.notify('Rol guardado');this.reset();this.load();},error:(e:unknown)=>this.notify(e,true),complete:()=>this.busy.set(false)};
+    if(this.editingId){this.service.updateRole(this.editingId,this.form).subscribe(observer);}
+    else{this.service.createRole(this.form).subscribe(observer);}
+  }
+  edit(role:PlatformRole):void{this.busy.set(true);this.service.role(role.id).subscribe({next:detail=>{this.editingId=detail.id;this.form={code:detail.code,name:detail.name,description:detail.description||'',active:detail.active,permissionIds:detail.permissionIds||[]};this.busy.set(false);},error:(e:unknown)=>this.notify(e,true)});}
+  remove(role:PlatformRole):void{if(!confirm(`Eliminar el rol ${role.code}?`))return;this.service.deleteRole(role.id).subscribe({next:()=>{this.notify('Rol eliminado');this.load();},error:(e:unknown)=>this.notify(e,true)});}
   reset():void{this.editingId=null;this.form={code:'',name:'',description:'',active:true,permissionIds:[]};}
   hasPermission(id:string):boolean{return this.form.permissionIds.includes(id);}
   togglePermission(id:string,checked:boolean):void{this.form.permissionIds=checked?[...new Set([...this.form.permissionIds,id])]:this.form.permissionIds.filter(x=>x!==id);}
-  private notify(value:any,failed=false):void{this.failed.set(failed);this.message.set(typeof value==='string'?value:value?.error?.message||'Operación no completada');this.busy.set(false);}
+  private notify(value:unknown,failed=false):void{this.failed.set(failed);const error=value as {error?:{message?:string}};this.message.set(typeof value==='string'?value:error?.error?.message||'Operación no completada');this.busy.set(false);}
 }
