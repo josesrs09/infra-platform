@@ -36,6 +36,8 @@ mkdir -p \
   messaging/data/emqx messaging/logs/emqx messaging/data/rabbitmq \
   security/data/crowdsec security/data/fail2ban \
   security/config/crowdsec security/config/fail2ban \
+  mail/data/mail mail/data/state mail/logs mail/config mail/scripts \
+  ci-cd/data/registry ci-cd/data/gitea ci-cd/config/registry ci-cd/config/gitea \
   backups/repository backups/cache backups/data backups/restore \
   secrets
 
@@ -50,11 +52,11 @@ if [[ "${EUID}" -eq 0 ]]; then
   chown -R 472:472 monitoring/data/grafana || true
   chown -R 65534:65534 monitoring/data/prometheus monitoring/data/alertmanager || true
   chown -R 10001:10001 logging/data/loki || true
-  chown -R 1000:1000 storage/data/minio messaging/data/emqx messaging/logs/emqx || true
+  chown -R 1000:1000 storage/data/minio messaging/data/emqx messaging/logs/emqx ci-cd/data/gitea ci-cd/config/gitea || true
 else
   echo "Aviso: ejecuta con sudo si algún contenedor reporta permisos denegados en carpetas data/."
 fi
 
-chmod +x scripts/*.sh backups/scripts/*.sh 2>/dev/null || true
+chmod +x scripts/*.sh backups/scripts/*.sh mail/scripts/*.sh 2>/dev/null || true
 
 echo "Infraestructura base y carpetas persistentes preparadas."
