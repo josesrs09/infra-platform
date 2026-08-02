@@ -1,0 +1,29 @@
+groups:
+  - name: daertech-platform
+    rules:
+      - alert: DaertechPlatformDown
+        expr: up{job="daertech-platform"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: DAERTECH Platform no responde
+          description: El backend no ha respondido al scraping de Prometheus durante más de 2 minutos.
+
+      - alert: HostHighCpu
+        expr: 100 - (avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Uso alto de CPU
+          description: El uso de CPU supera 85% durante 10 minutos.
+
+      - alert: HostLowDisk
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) * 100 < 15
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Poco espacio disponible
+          description: Un sistema de archivos tiene menos de 15% disponible.
