@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -15,12 +18,33 @@ jobs:
       - name: Prepare environment
         run: cp .env.example .env
 
-      - name: Validate Compose files
+      - name: Validate repository
         run: |
-          chmod +x scripts/validate.sh
+          chmod +x scripts/*.sh backups/scripts/*.sh mail/scripts/*.sh messaging/**/*.sh 2>/dev/null || true
           ./scripts/validate.sh
 
-      - name: Check shell scripts
+      - name: ShellCheck
         uses: ludeeus/action-shellcheck@2.0.0
         with:
-          scandir: ./scripts
+          scandir: .
+          ignore_paths: >-
+            .git
+            management/data
+            databases/data
+            monitoring/data
+            logging/data
+            messaging/data
+            storage/data
+            backups/data
+
+      - name: Validate Node instrumentation example
+        working-directory: examples/http-metrics/node-express
+        run: |
+          npm install --ignore-scripts
+          node --check server.js
+
+      - name: Validate Go instrumentation example
+        working-directory: examples/http-metrics/go
+        run: |
+          go mod tidy
+          go test ./...
