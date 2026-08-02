@@ -1,0 +1,54 @@
+services:
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver:14.0.0
+    container_name: infra-mailserver
+    hostname: ${MAIL_HOSTNAME}
+    domainname: ${MAIL_DOMAIN}
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      ENABLE_RSPAMD: "1"
+      ENABLE_CLAMAV: "0"
+      ENABLE_FAIL2BAN: "1"
+      ENABLE_AMAVIS: "0"
+      ENABLE_POSTGREY: "0"
+      ENABLE_SASLAUTHD: "0"
+      ENABLE_OPENDKIM: "1"
+      ENABLE_OPENDMARC: "1"
+      SSL_TYPE: letsencrypt
+      LOG_LEVEL: info
+      POSTMASTER_ADDRESS: ${POSTMASTER_ADDRESS}
+      PERMIT_DOCKER: network
+      ONE_DIR: "1"
+      TZ: ${TZ}
+    ports:
+      - "25:25"
+      - "465:465"
+      - "587:587"
+      - "993:993"
+    volumes:
+      - ./data/mail:/var/mail
+      - ./data/state:/var/mail-state
+      - ./logs:/var/log/mail
+      - ./config:/tmp/docker-mailserver
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - backend
+      - monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "ss --listening --tcp | grep -P 'LISTEN.+:smtp' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+networks:
+  backend:
+    external: true
+    name: infra_backend
+  monitoring:
+    external: true
+    name: infra_monitoring
