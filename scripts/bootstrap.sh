@@ -30,10 +30,13 @@ mkdir -p \
   databases/init/postgres databases/init/mysql \
   monitoring/data/prometheus monitoring/data/grafana monitoring/data/alertmanager \
   monitoring/prometheus/rules monitoring/grafana/provisioning/datasources \
+  monitoring/exporters/mysql \
   logging/data/loki logging/data/alloy logging/loki logging/alloy \
   storage/data/minio \
   messaging/data/emqx messaging/logs/emqx messaging/data/rabbitmq \
-  backups/repository backups/cache backups/data \
+  security/data/crowdsec security/data/fail2ban \
+  security/config/crowdsec security/config/fail2ban \
+  backups/repository backups/cache backups/data backups/restore \
   secrets
 
 if [[ ! -f proxy/letsencrypt/acme.json ]]; then
@@ -42,7 +45,6 @@ else
   chmod 600 proxy/letsencrypt/acme.json
 fi
 
-# Permisos requeridos por imágenes que ejecutan con usuarios no root.
 if [[ "${EUID}" -eq 0 ]]; then
   chown -R 999:999 databases/data/postgres databases/data/mysql messaging/data/rabbitmq || true
   chown -R 472:472 monitoring/data/grafana || true
