@@ -54,6 +54,21 @@ services:
       - traefik.http.routers.rabbitmq.middlewares=admin-chain@file
       - traefik.http.services.rabbitmq.loadbalancer.server.port=15672
 
+  error-telegram-bridge:
+    build:
+      context: ./error-telegram-bridge
+    container_name: infra-error-telegram-bridge
+    restart: unless-stopped
+    environment:
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@infra-rabbitmq:5672/${RABBITMQ_VHOST}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      ERROR_QUEUES: app.errors.critical,app.errors.warning,app.errors.info
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [messaging]
+
 networks:
   messaging:
     external: true
