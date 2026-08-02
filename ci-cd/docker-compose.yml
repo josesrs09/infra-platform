@@ -17,6 +17,7 @@ services:
       - traefik.http.routers.registry.rule=Host(`${REGISTRY_HOST}`)
       - traefik.http.routers.registry.entrypoints=websecure
       - traefik.http.routers.registry.tls.certresolver=letsencrypt
+      - traefik.http.routers.registry.middlewares=admin-chain@file
       - traefik.http.services.registry.loadbalancer.server.port=5000
 
   gitea:
@@ -52,6 +53,7 @@ services:
       - traefik.http.routers.gitea.rule=Host(`${GITEA_HOST}`)
       - traefik.http.routers.gitea.entrypoints=websecure
       - traefik.http.routers.gitea.tls.certresolver=letsencrypt
+      - traefik.http.routers.gitea.middlewares=admin-chain@file
       - traefik.http.services.gitea.loadbalancer.server.port=3000
 
 networks:
