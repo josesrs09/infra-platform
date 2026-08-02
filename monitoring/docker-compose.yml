@@ -11,6 +11,7 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/rules:/etc/prometheus/rules:ro
+      - ./prometheus/targets:/etc/prometheus/targets:ro
       - ./data/prometheus:/prometheus
     networks: [monitoring, proxy]
     labels:
@@ -67,10 +68,13 @@ services:
     image: prom/node-exporter:v1.9.0
     container_name: infra-node-exporter
     restart: unless-stopped
-    command: ["--path.rootfs=/host"]
+    command:
+      - --path.rootfs=/host
+      - --collector.textfile.directory=/textfile
     pid: host
     volumes:
       - /:/host:ro,rslave
+      - ./textfile:/textfile:ro
     networks: [monitoring]
 
   cadvisor:
