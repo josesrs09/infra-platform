@@ -1,0 +1,20 @@
+route:
+  receiver: telegram
+  group_by: [alertname, severity]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: telegram
+    telegram_configs:
+      - bot_token: CHANGE_ME
+        chat_id: 0
+        parse_mode: HTML
+        message: |
+          <b>{{ .Status | toUpper }}</b>
+          {{ range .Alerts }}
+          <b>{{ .Labels.alertname }}</b>
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          {{ end }}
