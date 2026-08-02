@@ -43,7 +43,7 @@ jobs:
         run: mvn -B verify
 
   database-startup:
-    name: Clean PostgreSQL startup
+    name: Clean PostgreSQL startup and auth smoke test
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -80,7 +80,7 @@ jobs:
           cache: maven
       - name: Package application
         run: mvn -B -DskipTests package
-      - name: Start application and validate health
+      - name: Start application, validate health and authenticate
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/daertech_platform
           SPRING_DATASOURCE_USERNAME: daertech
@@ -89,16 +89,19 @@ jobs:
           SPRING_DATA_REDIS_PORT: '6379'
           APP_JWT_SECRET: CI_ONLY_JWT_SECRET_WITH_MORE_THAN_SIXTY_FOUR_CHARACTERS_1234567890
           APP_CONFIG_ENCRYPTION_KEY: CI_ONLY_CONFIG_ENCRYPTION_KEY_32_CHARS_MINIMUM_1234567890
+          APP_ADMIN_USERNAME: admin
           APP_ADMIN_PASSWORD: CI_only_Admin_2026_Strong
           APP_MONITORING_ALERTMANAGER_WEBHOOK_TOKEN: CI_ONLY_ALERTMANAGER_TOKEN_64_CHARACTERS_MINIMUM_12345678901234567890
         run: |
           java -jar target/*.jar > application.log 2>&1 &
           pid=$!
           trap 'kill $pid 2>/dev/null || true; cat application.log' EXIT
+          healthy=false
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://localhost:8080/api/v1/actuator/health > health.json; then
               cat health.json
-              exit 0
+              healthy=true
+              break
             fi
             if ! kill -0 "$pid" 2>/dev/null; then
               echo "Application terminated before becoming healthy"
@@ -106,8 +109,23 @@ jobs:
             fi
             sleep 2
           done
-          echo "Application did not become healthy"
-          exit 1
+          if [ "$healthy" != "true" ]; then
+            echo "Application did not become healthy"
+            exit 1
+          fi
+
+          curl --fail --silent \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"admin","password":"CI_only_Admin_2026_Strong"}' \
+            http://localhost:8080/api/v1/auth/login > login.json
+
+          access_token=$(python3 -c 'import json; print(json.load(open("login.json"))["accessToken"])')
+          test -n "$access_token"
+
+          curl --fail --silent \
+            -H "Authorization: Bearer $access_token" \
+            http://localhost:8080/api/v1/admin/users > users.json
+          python3 -c 'import json; data=json.load(open("users.json")); assert isinstance(data, list); assert any(u.get("username") == "admin" for u in data)'
 
   frontend:
     name: Frontend Angular 20
