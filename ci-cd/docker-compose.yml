@@ -1,0 +1,66 @@
+services:
+  registry:
+    image: registry:2.8.3
+    container_name: infra-registry
+    restart: unless-stopped
+    environment:
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    volumes:
+      - ./data/registry:/var/lib/registry
+      - ./config/registry:/etc/docker/registry:ro
+    networks:
+      - backend
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=infra_proxy
+      - traefik.http.routers.registry.rule=Host(`${REGISTRY_HOST}`)
+      - traefik.http.routers.registry.entrypoints=websecure
+      - traefik.http.routers.registry.tls.certresolver=letsencrypt
+      - traefik.http.services.registry.loadbalancer.server.port=5000
+
+  gitea:
+    image: gitea/gitea:1.23.7-rootless
+    container_name: infra-gitea
+    restart: unless-stopped
+    environment:
+      GITEA__database__DB_TYPE: postgres
+      GITEA__database__HOST: infra-postgres:5432
+      GITEA__database__NAME: ${GITEA_DB_NAME}
+      GITEA__database__USER: ${GITEA_DB_USER}
+      GITEA__database__PASSWD: ${GITEA_DB_PASSWORD}
+      GITEA__server__DOMAIN: ${GITEA_HOST}
+      GITEA__server__ROOT_URL: https://${GITEA_HOST}/
+      GITEA__server__SSH_DOMAIN: ${GITEA_HOST}
+      GITEA__server__SSH_PORT: ${GITEA_SSH_PORT}
+      GITEA__service__DISABLE_REGISTRATION: "true"
+      USER_UID: "1000"
+      USER_GID: "1000"
+      TZ: ${TZ}
+    ports:
+      - "${GITEA_SSH_PORT}:2222"
+    volumes:
+      - ./data/gitea:/var/lib/gitea
+      - ./config/gitea:/etc/gitea
+    networks:
+      - backend
+      - database
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=infra_proxy
+      - traefik.http.routers.gitea.rule=Host(`${GITEA_HOST}`)
+      - traefik.http.routers.gitea.entrypoints=websecure
+      - traefik.http.routers.gitea.tls.certresolver=letsencrypt
+      - traefik.http.services.gitea.loadbalancer.server.port=3000
+
+networks:
+  backend:
+    external: true
+    name: infra_backend
+  database:
+    external: true
+    name: infra_database
+  proxy:
+    external: true
+    name: infra_proxy
