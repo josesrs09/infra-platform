@@ -22,6 +22,7 @@ services:
       - traefik.http.routers.minio-console.rule=Host(`${MINIO_CONSOLE_HOST}`)
       - traefik.http.routers.minio-console.entrypoints=websecure
       - traefik.http.routers.minio-console.tls.certresolver=letsencrypt
+      - traefik.http.routers.minio-console.middlewares=admin-chain@file
       - traefik.http.services.minio-console.loadbalancer.server.port=9001
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
