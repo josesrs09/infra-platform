@@ -6,9 +6,13 @@ COPY src src
 RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:21-jre-alpine
-RUN addgroup -S app && adduser -S app -G app
+RUN apk add --no-cache git openssh-client docker-cli docker-cli-compose curl \
+    && addgroup -S app \
+    && adduser -S app -G app
 WORKDIR /app
 COPY --from=build /workspace/target/daertech-platform-0.1.0.jar app.jar
+RUN mkdir -p /opt/infra-platform/workspaces /opt/daertech/config \
+    && chown -R app:app /opt/infra-platform /opt/daertech /app
 USER app
 EXPOSE 8080
 ENTRYPOINT ["java","-XX:MaxRAMPercentage=75.0","-jar","/app/app.jar"]
