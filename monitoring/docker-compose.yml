@@ -11,7 +11,7 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/rules:/etc/prometheus/rules:ro
-      - prometheus_data:/prometheus
+      - ./data/prometheus:/prometheus
     networks:
       - monitoring
       - proxy
@@ -33,7 +33,7 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_SERVER_ROOT_URL: https://${GRAFANA_HOST}
     volumes:
-      - grafana_data:/var/lib/grafana
+      - ./data/grafana:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
     networks:
       - monitoring
@@ -53,7 +53,7 @@ services:
     command: --config.file=/etc/alertmanager/alertmanager.yml
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - alertmanager_data:/alertmanager
+      - ./data/alertmanager:/alertmanager
     networks:
       - monitoring
 
@@ -93,11 +93,6 @@ services:
     command: --config.file=/config/blackbox.yml
     networks:
       - monitoring
-
-volumes:
-  prometheus_data:
-  grafana_data:
-  alertmanager_data:
 
 networks:
   monitoring:
