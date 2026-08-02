@@ -1,0 +1,76 @@
+name: DAERTECH Platform CI
+
+on:
+  pull_request:
+    paths:
+      - 'apps/daertech-platform/**'
+      - '.github/workflows/daertech-platform-ci.yml'
+  push:
+    branches:
+      - main
+      - feature/daertech-platform-foundation
+    paths:
+      - 'apps/daertech-platform/**'
+      - '.github/workflows/daertech-platform-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend Java 21
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/daertech-platform/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Validate Flyway migration versions
+        run: |
+          versions=$(find src/main/resources/db/migration -maxdepth 1 -type f -name 'V*__*.sql' -printf '%f\n' | sed -E 's/^V([^_]+(_[0-9]+)*)__.*$/\1/' | sort)
+          duplicates=$(printf '%s\n' "$versions" | uniq -d)
+          if [ -n "$duplicates" ]; then
+            echo "Duplicate Flyway versions:"
+            echo "$duplicates"
+            exit 1
+          fi
+      - name: Test and package backend
+        run: mvn -B verify
+
+  frontend:
+    name: Frontend Angular 20
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/daertech-platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/daertech-platform/frontend/package.json
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build frontend
+        run: npm run build
+
+  compose:
+    name: Docker Compose validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/daertech-platform
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare environment
+        run: cp .env.example .env
+      - name: Validate platform Compose
+        run: docker compose config --quiet
+      - name: Validate monitoring Compose
+        run: docker compose -f docker-compose.monitoring.yml config --quiet
