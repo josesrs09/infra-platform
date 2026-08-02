@@ -15,6 +15,9 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Snapshot Restic de toda la plataforma a las 02:00.
 0 2 * * * root cd $ROOT_DIR && docker compose --env-file .env -f backups/docker-compose.yml run --rm restic-backup >> $ROOT_DIR/backups/data/restic-backup.log 2>&1
+
+# Sincronización de backups hacia Dropbox a las 03:00.
+0 3 * * * root cd $ROOT_DIR && $ROOT_DIR/backups/scripts/upload-dropbox.sh >> $ROOT_DIR/backups/data/dropbox-upload.log 2>&1
 EOF
 
 chmod 0644 "$CRON_FILE"
