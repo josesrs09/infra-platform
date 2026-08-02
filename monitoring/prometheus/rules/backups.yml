@@ -1,0 +1,42 @@
+groups:
+  - name: backups
+    rules:
+      - alert: DatabaseBackupFailed
+        expr: infra_backup_last_status{type="database"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          source: backup
+        annotations:
+          summary: "Falló el backup de bases de datos"
+          description: "El último respaldo lógico de PostgreSQL/MySQL terminó con error."
+
+      - alert: DatabaseBackupStale
+        expr: time() - infra_backup_last_finish_timestamp_seconds{type="database"} > 90000
+        for: 10m
+        labels:
+          severity: warning
+          source: backup
+        annotations:
+          summary: "Backup de bases de datos atrasado"
+          description: "No se registra un backup exitoso en las últimas 25 horas."
+
+      - alert: DropboxUploadFailed
+        expr: infra_dropbox_upload_last_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          source: dropbox
+        annotations:
+          summary: "Falló la carga de backups a Dropbox"
+          description: "La última sincronización con Dropbox terminó con error."
+
+      - alert: DropboxUploadStale
+        expr: time() - infra_dropbox_upload_last_finish_timestamp_seconds > 93600
+        for: 10m
+        labels:
+          severity: warning
+          source: dropbox
+        annotations:
+          summary: "Carga a Dropbox atrasada"
+          description: "No se registra una carga exitosa a Dropbox en las últimas 26 horas."
