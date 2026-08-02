@@ -42,6 +42,73 @@ jobs:
       - name: Test and package backend
         run: mvn -B verify
 
+  database-startup:
+    name: Clean PostgreSQL startup
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: daertech_platform
+          POSTGRES_USER: daertech
+          POSTGRES_PASSWORD: daertech_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U daertech -d daertech_platform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    defaults:
+      run:
+        working-directory: apps/daertech-platform/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Package application
+        run: mvn -B -DskipTests package
+      - name: Start application and validate health
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/daertech_platform
+          SPRING_DATASOURCE_USERNAME: daertech
+          SPRING_DATASOURCE_PASSWORD: daertech_ci_password
+          SPRING_DATA_REDIS_HOST: localhost
+          SPRING_DATA_REDIS_PORT: '6379'
+          APP_JWT_SECRET: CI_ONLY_JWT_SECRET_WITH_MORE_THAN_SIXTY_FOUR_CHARACTERS_1234567890
+          APP_CONFIG_ENCRYPTION_KEY: CI_ONLY_CONFIG_ENCRYPTION_KEY_32_CHARS_MINIMUM_1234567890
+          APP_ADMIN_PASSWORD: CI_only_Admin_2026_Strong
+          APP_MONITORING_ALERTMANAGER_WEBHOOK_TOKEN: CI_ONLY_ALERTMANAGER_TOKEN_64_CHARACTERS_MINIMUM_12345678901234567890
+        run: |
+          java -jar target/*.jar > application.log 2>&1 &
+          pid=$!
+          trap 'kill $pid 2>/dev/null || true; cat application.log' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:8080/api/v1/actuator/health > health.json; then
+              cat health.json
+              exit 0
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              echo "Application terminated before becoming healthy"
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "Application did not become healthy"
+          exit 1
+
   frontend:
     name: Frontend Angular 20
     runs-on: ubuntu-latest
