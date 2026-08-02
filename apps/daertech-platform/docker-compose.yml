@@ -54,10 +54,17 @@ services:
       APP_JWT_ACCESS_MINUTES: ${JWT_ACCESS_MINUTES:-15}
       APP_JWT_REFRESH_DAYS: ${JWT_REFRESH_DAYS:-7}
       APP_CONFIG_ENCRYPTION_KEY: ${CONFIG_ENCRYPTION_KEY}
+      APP_CONFIG_ROOT_DIRECTORY: /opt/infra-platform/generated
+      APP_CONFIG_BACKUP_DIRECTORY: /opt/infra-platform/backups/configuration
+      APP_CONFIG_RESTART_ENABLED: ${CONFIG_RESTART_ENABLED:-false}
+      APP_CONFIG_ALLOWED_SERVICES: ${CONFIG_ALLOWED_SERVICES}
       APP_ADMIN_NAME: ${ADMIN_NAME}
       APP_ADMIN_EMAIL: ${ADMIN_EMAIL}
       APP_ADMIN_USERNAME: ${ADMIN_USERNAME}
       APP_ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    volumes:
+      - ./generated:/opt/infra-platform/generated
+      - ./backups/configuration:/opt/infra-platform/backups/configuration
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     networks: [platform]
