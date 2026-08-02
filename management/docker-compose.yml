@@ -8,7 +8,7 @@ services:
       - no-new-privileges:true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - portainer_data:/data
+      - ./data/portainer:/data
     networks:
       - proxy
     labels:
@@ -26,7 +26,7 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      - uptime_kuma_data:/app/data
+      - ./data/uptime-kuma:/app/data
     networks:
       - proxy
       - monitoring
@@ -37,10 +37,6 @@ services:
       - traefik.http.routers.uptime.entrypoints=websecure
       - traefik.http.routers.uptime.tls.certresolver=letsencrypt
       - traefik.http.services.uptime.loadbalancer.server.port=3001
-
-volumes:
-  portainer_data:
-  uptime_kuma_data:
 
 networks:
   proxy:
