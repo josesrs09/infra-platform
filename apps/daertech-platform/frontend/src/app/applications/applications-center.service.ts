@@ -8,6 +8,7 @@ export interface ApplicationSummary {
   context_path: string; internal_port?: number | null; health_path?: string | null; metrics_path?: string | null;
   active: boolean;
 }
+export type PlatformApplication = ApplicationSummary;
 export interface ApplicationEnvironment { id: string; environment: string; branch?: string | null; public_url?: string | null; replicas: number; cpu_limit?: string | null; memory_limit?: string | null; enabled: boolean; }
 export interface ApplicationVariable { id: string; environment: string; variable_key: string; variable_value?: string | null; secret: boolean; required: boolean; description?: string | null; }
 export interface ApplicationDependency { id: string; dependency_type: string; dependency_name: string; target?: string | null; required: boolean; }
