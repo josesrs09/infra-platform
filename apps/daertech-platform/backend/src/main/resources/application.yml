@@ -41,7 +41,7 @@ management:
 info:
   app:
     name: DAERTECH Platform
-    version: 0.4.0
+    version: 0.5.0
 app:
   jwt:
     secret: ${APP_JWT_SECRET:CHANGE_ME_AT_LEAST_64_CHARACTERS}
@@ -51,6 +51,10 @@ app:
     encryption-key: ${APP_CONFIG_ENCRYPTION_KEY:CHANGE_ME_AT_LEAST_32_CHARACTERS}
   configuration:
     allowed-root: ${APP_CONFIG_ALLOWED_ROOT:/opt/daertech/config}
+  deployment:
+    workspace-root: ${APP_DEPLOYMENT_WORKSPACE_ROOT:/opt/infra-platform/workspaces}
+    execution-enabled: ${APP_DEPLOYMENT_EXECUTION_ENABLED:false}
+    command-timeout-seconds: ${APP_DEPLOYMENT_COMMAND_TIMEOUT_SECONDS:900}
   telegram:
     bot-token: ${TELEGRAM_BOT_TOKEN:}
     chat-id: ${TELEGRAM_CHAT_ID:}
