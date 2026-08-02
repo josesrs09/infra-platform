@@ -19,6 +19,7 @@ export const appRoutes: Routes = [
       { path: 'permissions', loadComponent: () => import('./security/permissions.component').then(m => m.PermissionsComponent) },
       { path: 'configuration', loadComponent: () => import('./configuration/configuration-center.component').then(m => m.ConfigurationCenterComponent) },
       { path: 'applications', loadComponent: () => import('./applications/applications-center.component').then(m => m.ApplicationsCenterComponent) },
+      { path: 'deployments', loadComponent: () => import('./deployments/deployment-center.component').then(m => m.DeploymentCenterComponent) },
       { path: 'monitoring', loadComponent: () => import('./monitoring/monitoring-center.component').then(m => m.MonitoringCenterComponent) },
       { path: 'legacy', loadComponent: () => import('./legacy/legacy-admin.component').then(m => m.LegacyAdminComponent) }
     ]
