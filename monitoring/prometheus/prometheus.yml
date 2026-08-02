@@ -39,6 +39,13 @@ scrape_configs:
     static_configs:
       - targets: ["redis-exporter:9121"]
 
+  - job_name: applications
+    metrics_path: /metrics
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/applications.yml
+        refresh_interval: 30s
+
   - job_name: blackbox-http
     metrics_path: /probe
     params:
