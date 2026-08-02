@@ -2,6 +2,7 @@ package com.daertech.platform.monitoring;
 
 import com.daertech.platform.configuration.TelegramNotifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,9 +23,12 @@ public class AlertmanagerWebhookController {
     }
 
     @PostMapping("/alertmanager")
-    public Map<String,Object> receive(@RequestHeader(name="X-Alert-Token",required=false) String token,
+    public Map<String,Object> receive(@RequestHeader(name="X-Alert-Token",required=false) String legacyToken,
+                                      @RequestHeader(name=HttpHeaders.AUTHORIZATION,required=false) String authorization,
                                       @RequestBody Map<String,Object> payload){
-        if(webhookToken.isBlank()||"CHANGE_ME".equals(webhookToken)||!Objects.equals(webhookToken,token))
+        String bearerToken=authorization!=null&&authorization.startsWith("Bearer ")?authorization.substring(7):null;
+        String suppliedToken=bearerToken!=null?bearerToken:legacyToken;
+        if(webhookToken.isBlank()||"CHANGE_ME".equals(webhookToken)||!Objects.equals(webhookToken,suppliedToken))
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Token de Alertmanager inválido");
         String status=Objects.toString(payload.get("status"),"unknown");
         List<?> alerts=payload.get("alerts") instanceof List<?> list?list:List.of();
