@@ -50,6 +50,10 @@ Para HTTP:
 
 La API exporta secretos enmascarados por defecto. El parámetro `includeSecrets=true` permite descifrarlos, pero debe utilizarse únicamente en procesos administrativos controlados y nunca exponerse directamente en enlaces públicos, logs o auditorías.
 
+## Cambios manuales
+
+No se requieren puertos entrantes adicionales. El contenedor backend debe poder resolver los hosts de destino y alcanzar sus puertos. Para validar servicios externos, el firewall saliente y el DNS del VPS deben permitir la conexión.
+
 ## Limitación actual
 
 Los perfiles PostgreSQL, Redis, RabbitMQ, MQTT, SMTP y MinIO validan apertura de puerto TCP. La autenticación específica por protocolo, TLS, credenciales y comandos funcionales se incorporará en el siguiente bloque de validadores avanzados.
