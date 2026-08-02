@@ -26,7 +26,7 @@ done
 mkdir -p \
   proxy/letsencrypt proxy/logs \
   management/data/portainer management/data/uptime-kuma \
-  databases/data/postgres databases/data/mysql databases/data/redis \
+  databases/data/postgres databases/data/mysql databases/data/redis databases/data/pgadmin \
   databases/init/postgres databases/init/mysql \
   monitoring/data/prometheus monitoring/data/grafana monitoring/data/alertmanager \
   monitoring/prometheus/rules monitoring/grafana/provisioning/datasources \
@@ -49,6 +49,7 @@ fi
 
 if [[ "${EUID}" -eq 0 ]]; then
   chown -R 999:999 databases/data/postgres databases/data/mysql messaging/data/rabbitmq || true
+  chown -R 5050:5050 databases/data/pgadmin || true
   chown -R 472:472 monitoring/data/grafana || true
   chown -R 65534:65534 monitoring/data/prometheus monitoring/data/alertmanager || true
   chown -R 10001:10001 logging/data/loki || true
