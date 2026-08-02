@@ -17,6 +17,7 @@ export const appRoutes: Routes = [
       { path: 'users', loadComponent: () => import('./security/users.component').then(m => m.UsersComponent) },
       { path: 'roles', loadComponent: () => import('./security/roles.component').then(m => m.RolesComponent) },
       { path: 'permissions', loadComponent: () => import('./security/permissions.component').then(m => m.PermissionsComponent) },
+      { path: 'configuration', loadComponent: () => import('./configuration/configuration-center.component').then(m => m.ConfigurationCenterComponent) },
       { path: 'monitoring', loadComponent: () => import('./monitoring/monitoring-center.component').then(m => m.MonitoringCenterComponent) },
       { path: 'legacy', loadComponent: () => import('./legacy/legacy-admin.component').then(m => m.LegacyAdminComponent) }
     ]
