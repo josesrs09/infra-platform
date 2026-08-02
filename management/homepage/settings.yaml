@@ -1,0 +1,9 @@
+title: Infra Platform
+language: es
+headerStyle: clean
+hideVersion: true
+statusStyle: dot
+quicklaunch:
+  searchDescriptions: true
+  hideInternetSearch: true
+  showSearchSuggestions: false
