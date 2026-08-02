@@ -20,23 +20,6 @@ CREATE TABLE platform.configuration_profiles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE platform.configuration_apply_history (
-  id UUID PRIMARY KEY,
-  profile_id UUID REFERENCES platform.configuration_profiles(id),
-  environment VARCHAR(40) NOT NULL,
-  target_path VARCHAR(500) NOT NULL,
-  backup_path VARCHAR(700),
-  checksum_before VARCHAR(64),
-  checksum_after VARCHAR(64),
-  status VARCHAR(30) NOT NULL,
-  reason VARCHAR(500),
-  applied_by VARCHAR(120),
-  applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  details JSONB
-);
-
-CREATE INDEX idx_cfg_apply_history_date ON platform.configuration_apply_history(applied_at DESC);
-
 INSERT INTO platform.permissions(id,code,name,module)
 VALUES
 (gen_random_uuid(),'CONFIG_APPLY','Aplicar configuraciones','CONFIGURATION'),
