@@ -18,283 +18,111 @@ Este documento concentra los cambios manuales, secretos, DNS, certificados, ruta
 
 ```bash
 sudo mkdir -p /opt/infra-platform
-sudo chown -R "$USER":"$USER" /opt/infra-platform
+sudo chown "$USER":"$USER" /opt/infra-platform
 git clone https://github.com/josesrs09/infra-platform.git /opt/infra-platform
-cd /opt/infra-platform
-git checkout feature/daertech-platform-foundation
-cd apps/daertech-platform
-```
-
-Después de fusionar la rama, usa `main` en lugar de la rama de funcionalidad.
-
-## 3. Crear directorios persistentes
-
-La solución usa bind mounts, no volúmenes nombrados.
-
-```bash
-mkdir -p data/postgres data/redis logs backups certificates secrets
-chmod 700 data/postgres data/redis secrets certificates
-```
-
-No agregues estos directorios a Git.
-
-## 4. Configurar variables
-
-```bash
+cd /opt/infra-platform/apps/daertech-platform
 cp .env.example .env
-chmod 600 .env
-nano .env
 ```
 
-Cambia obligatoriamente:
-
-- `POSTGRES_PASSWORD`
-- `REDIS_PASSWORD`
-- `JWT_SECRET`
-- `ADMIN_PASSWORD`
-- `PUBLIC_FRONTEND_URL`
-- `PUBLIC_API_URL`
-
-Genera secretos robustos:
+## 3. Directorios persistentes
 
 ```bash
-openssl rand -base64 48
+sudo mkdir -p /srv/daertech-platform/{postgres,redis,logs,exports}
+sudo chown -R 999:999 /srv/daertech-platform/postgres
+sudo chown -R 999:999 /srv/daertech-platform/redis
 ```
 
-El `JWT_SECRET` debe tener al menos 64 caracteres y no debe reutilizar contraseñas.
+La solución usa bind mounts. No sustituya estas rutas por volúmenes nombrados sin documentar y probar una migración.
 
-## 5. Datos del administrador inicial
+## 4. Secretos y administrador inicial
 
-Configura en `.env`:
+Genere secretos distintos:
+
+```bash
+openssl rand -base64 64
+openssl rand -base64 36
+openssl rand -base64 24
+```
+
+Configure en `.env`:
 
 ```dotenv
-ADMIN_NAME=José Rafael Santos Rosario
-ADMIN_EMAIL=admin@daertechglobal.com
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=UNA_CLAVE_TEMPORAL_MUY_FUERTE
+APP_JWT_SECRET=<mínimo 64 caracteres>
+APP_ADMIN_NAME=José Rafael Santos Rosario
+APP_ADMIN_EMAIL=admin@daertechglobal.com
+APP_ADMIN_USERNAME=admin
+APP_ADMIN_PASSWORD=<mínimo 12 caracteres>
+POSTGRES_PASSWORD=<secreto fuerte>
+REDIS_PASSWORD=<secreto fuerte>
 ```
 
-La contraseña debe cambiarse inmediatamente después del primer inicio de sesión cuando el módulo de autenticación quede habilitado.
+Nunca cargue `.env`, tokens, certificados privados o `rclone.conf` en GitHub.
 
-## 6. DNS manual
+## 5. DNS, Traefik y HTTPS
 
-Crea registros `A` apuntando a la IP pública del VPS:
+Cree registros `A` hacia la IP pública para:
 
-```text
-infra.daertechglobal.com
-api-infra.daertechglobal.com
-```
+- `infra.daertechglobal.com`
+- `api-infra.daertechglobal.com`
 
-Para las consolas de infraestructura, crea según se habiliten:
+Configure Traefik para emitir certificados Let's Encrypt, redirigir HTTP a HTTPS y conservar `X-Forwarded-For` y `X-Correlation-Id`.
 
-```text
-traefik.daertechglobal.com
-grafana.daertechglobal.com
-prometheus.daertechglobal.com
-logs.daertechglobal.com
-alertmanager.daertechglobal.com
-rabbitmq.daertechglobal.com
-minio.daertechglobal.com
-s3.daertechglobal.com
-portainer.daertechglobal.com
-```
-
-Valida propagación:
-
-```bash
-dig +short infra.daertechglobal.com
-dig +short api-infra.daertechglobal.com
-```
-
-## 7. Traefik y HTTPS
-
-La aplicación puede arrancar inicialmente por puertos locales. Para producción debe conectarse a la red externa de Traefik existente y utilizar certificados Let's Encrypt.
-
-Cambios manuales requeridos en el `docker-compose.yml` de producción:
-
-1. Añadir la red externa de Traefik.
-2. Eliminar la publicación pública de los puertos 4200 y 8080.
-3. Añadir etiquetas para `infra.daertechglobal.com` y `api-infra.daertechglobal.com`.
-4. Confirmar el nombre del `certresolver` configurado en Traefik.
-
-Ejemplo conceptual para frontend:
-
-```yaml
-labels:
-  - traefik.enable=true
-  - traefik.http.routers.daertech-platform.rule=Host(`infra.daertechglobal.com`)
-  - traefik.http.routers.daertech-platform.entrypoints=websecure
-  - traefik.http.routers.daertech-platform.tls.certresolver=letsencrypt
-  - traefik.http.services.daertech-platform.loadbalancer.server.port=80
-```
-
-Ejemplo conceptual para backend:
-
-```yaml
-labels:
-  - traefik.enable=true
-  - traefik.http.routers.daertech-api.rule=Host(`api-infra.daertechglobal.com`)
-  - traefik.http.routers.daertech-api.entrypoints=websecure
-  - traefik.http.routers.daertech-api.tls.certresolver=letsencrypt
-  - traefik.http.services.daertech-api.loadbalancer.server.port=8080
-```
-
-## 8. Telegram
-
-Crea un bot con BotFather y configura:
-
-```dotenv
-TELEGRAM_BOT_TOKEN=valor_real
-TELEGRAM_CHAT_ID=valor_real
-```
-
-Nunca publiques estos valores en GitHub. La integración funcional se conectará en la fase de alertas.
-
-## 9. Dropbox y Rclone
-
-Instala Rclone en el servidor y crea el remote:
-
-```bash
-rclone config
-```
-
-Nombre recomendado:
-
-```text
-dropbox
-```
-
-Ruta remota:
-
-```text
-infra-platform/backups
-```
-
-Prueba:
-
-```bash
-rclone lsd dropbox:
-rclone mkdir dropbox:infra-platform/backups
-```
-
-El archivo `rclone.conf` debe permanecer fuera de Git y con permisos `600`.
-
-## 10. Construcción y arranque
+## 6. Arranque
 
 ```bash
 docker compose config
-docker compose build --pull
+docker compose build --no-cache
 docker compose up -d
-```
-
-Verifica:
-
-```bash
 docker compose ps
-docker compose logs --tail=200 backend
-docker compose logs --tail=200 frontend
+docker compose logs -f backend
 ```
 
-## 11. Validaciones de salud
+## 7. Validaciones
 
 ```bash
-curl -f http://localhost:8080/api/v1/actuator/health
-curl -f http://localhost:8080/api/v1/actuator/info
-curl -f http://localhost:8080/api/v1/actuator/prometheus
-curl -I http://localhost:4200
+curl -fsS http://127.0.0.1:8080/api/v1/actuator/health
+curl -fsS http://127.0.0.1:8080/api/v1/actuator/info
 ```
 
-Resultado esperado: servicios `healthy` y respuestas HTTP 200.
+Inicie sesión y utilice el access token para validar `/api/v1/admin/users`, `/roles` y `/permissions`. Consulte `FASE_1_SEGURIDAD.md` para los endpoints y comandos.
 
-## 12. Base de datos
+## 8. Seguridad manual
 
-Flyway crea el esquema `platform` y las tablas iniciales al iniciar el backend.
+- Permita 80/443 públicamente y SSH solamente desde IPs administrativas.
+- No publique PostgreSQL, Redis ni Actuator directamente a Internet.
+- Cambie la contraseña inicial después del primer acceso.
+- Restrinja Prometheus a la red de monitoreo.
+- Revise `platform.audit_events` para confirmar la auditoría administrativa.
+- La rotación de `APP_JWT_SECRET` invalida access tokens existentes.
 
-Valida:
+## 9. Telegram y Dropbox
+
+Configure `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` únicamente en el servidor. Cree el remote `dropbox` mediante `rclone config`, proteja `rclone.conf` con permisos `600` y pruebe:
 
 ```bash
-docker compose exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c '\dt platform.*'
+rclone lsd dropbox:
 ```
 
-No ejecutes migraciones manualmente en producción salvo procedimiento de recuperación aprobado.
-
-## 13. Firewall
-
-Abre únicamente:
-
-```text
-22/tcp o puerto SSH personalizado
-80/tcp
-443/tcp
-```
-
-PostgreSQL, Redis y el backend no deben exponerse a Internet. Si se publican temporalmente para pruebas, restringe el origen por IP y retira la regla al finalizar.
-
-## 14. Cambios manuales pendientes antes de producción
-
-- Confirmar IP pública del VPS.
-- Crear todos los registros DNS requeridos.
-- Confirmar usuario y puerto SSH.
-- Configurar Traefik y su `certresolver` real.
-- Configurar secretos en `.env` o Docker secrets.
-- Definir política de retención de backups.
-- Configurar Rclone con Dropbox.
-- Configurar bot y chat de Telegram.
-- Configurar SMTP y cuentas de alertas.
-- Registrar aplicaciones reales y sus repositorios.
-- Confirmar endpoints de health y métricas de cada aplicación.
-- Integrar Prometheus, Loki, Grafana y Alertmanager.
-- Ejecutar pruebas de recuperación de PostgreSQL y Redis.
-- Cambiar la contraseña inicial del administrador.
-- Deshabilitar puertos de desarrollo expuestos.
-- Activar copias externas y prueba mensual de restauración.
-
-## 15. Operación diaria
+## 10. Backups
 
 ```bash
-cd /opt/infra-platform/apps/daertech-platform
-docker compose ps
-docker compose logs --since=30m backend
-docker compose pull
-docker compose up -d --build
+docker compose exec -T postgres pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB" > /srv/daertech-platform/exports/platform-$(date +%F-%H%M).dump
+rclone copy /srv/daertech-platform/exports dropbox:infra-platform/backups
 ```
 
-Antes de actualizar:
+Pruebe periódicamente una restauración en un entorno aislado.
 
-1. Respaldar PostgreSQL.
-2. Respaldar `.env` y configuraciones externas.
-3. Revisar migraciones.
-4. Desplegar en QA.
-5. Ejecutar smoke tests.
-6. Desplegar en producción.
-7. Verificar health, métricas y logs.
+## 11. Checklist
 
-## 16. Recuperación básica
-
-PostgreSQL:
-
-```bash
-docker compose exec -T postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc > backups/daertech-platform-$(date +%F-%H%M).dump
-```
-
-Restauración debe realizarse primero en un ambiente aislado:
-
-```bash
-docker compose exec -T postgres pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists < backups/ARCHIVO.dump
-```
-
-## 17. Criterio de producción
-
-No publiques la plataforma hasta cumplir todos estos puntos:
-
-- Compilación sin errores.
-- Migraciones exitosas.
-- Health checks correctos.
-- HTTPS válido.
-- Secretos fuera de Git.
-- Firewall restringido.
-- Backup y restauración probados.
-- Alertas operativas.
-- Usuario administrador protegido.
-- Revisión de permisos y auditoría.
-- Monitoreo de CPU, memoria, disco, contenedores y aplicación.
+- [ ] DNS y HTTPS válidos.
+- [ ] `.env` fuera de Git.
+- [ ] Secretos fuertes y únicos.
+- [ ] Administrador inicial creado.
+- [ ] Login y refresh token probados.
+- [ ] CRUD de usuarios y roles validado con RBAC.
+- [ ] Auditoría administrativa registrada.
+- [ ] PostgreSQL y Redis no publicados.
+- [ ] Health checks correctos.
+- [ ] Backup y restauración probados.
+- [ ] Telegram y Dropbox validados.
+- [ ] Firewall y SSH endurecidos.
