@@ -17,6 +17,7 @@ services:
       - traefik.http.routers.portainer.rule=Host(`${PORTAINER_HOST}`)
       - traefik.http.routers.portainer.entrypoints=websecure
       - traefik.http.routers.portainer.tls.certresolver=letsencrypt
+      - traefik.http.routers.portainer.middlewares=admin-chain@file
       - traefik.http.services.portainer.loadbalancer.server.port=9000
 
   uptime-kuma:
@@ -36,6 +37,7 @@ services:
       - traefik.http.routers.uptime.rule=Host(`${UPTIME_HOST}`)
       - traefik.http.routers.uptime.entrypoints=websecure
       - traefik.http.routers.uptime.tls.certresolver=letsencrypt
+      - traefik.http.routers.uptime.middlewares=admin-chain@file
       - traefik.http.services.uptime.loadbalancer.server.port=3001
 
 networks:
