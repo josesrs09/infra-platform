@@ -64,11 +64,15 @@ services:
       APP_ADMIN_EMAIL: ${ADMIN_EMAIL}
       APP_ADMIN_USERNAME: ${ADMIN_USERNAME}
       APP_ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    group_add:
+      - "${DOCKER_GID:-999}"
     volumes:
       - ./generated:/opt/daertech/config/generated
       - ./backups/configuration:/opt/daertech/config/backups
       - ./managed-config:/opt/daertech/config/managed
       - ./workspaces:/opt/infra-platform/workspaces
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${SSH_DEPLOY_KEYS_DIR:-./secrets/ssh}:/home/app/.ssh:ro
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     networks: [platform]
