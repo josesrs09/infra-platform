@@ -1,0 +1,17 @@
+- targets:
+    - api-node:3000
+  labels:
+    application: api-node
+    environment: production
+
+- targets:
+    - api-spring:8080
+  labels:
+    application: api-spring
+    environment: production
+
+- targets:
+    - api-php:80
+  labels:
+    application: api-php
+    environment: production
