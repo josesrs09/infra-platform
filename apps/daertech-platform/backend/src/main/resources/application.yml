@@ -29,7 +29,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus,metrics,env
+        include: health,info,prometheus,metrics
   endpoint:
     health:
       probes:
@@ -41,12 +41,14 @@ management:
 info:
   app:
     name: DAERTECH Platform
-    version: 0.1.0
+    version: 0.2.0
 app:
   jwt:
     secret: ${APP_JWT_SECRET:CHANGE_ME_AT_LEAST_64_CHARACTERS}
     access-minutes: ${APP_JWT_ACCESS_MINUTES:15}
     refresh-days: ${APP_JWT_REFRESH_DAYS:7}
+  config:
+    encryption-key: ${APP_CONFIG_ENCRYPTION_KEY:CHANGE_ME_AT_LEAST_32_CHARACTERS}
   admin:
     name: ${APP_ADMIN_NAME:Administrator}
     email: ${APP_ADMIN_EMAIL:admin@daertechglobal.com}
