@@ -1,0 +1,85 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Targets disponibles",
+      "id": 1,
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "sum(up)", "refId": "A"}],
+      "gridPos": {"h": 7, "w": 6, "x": 0, "y": 0}
+    },
+    {
+      "type": "stat",
+      "title": "Targets no disponibles",
+      "id": 2,
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "count(up) - sum(up)", "refId": "A"}],
+      "gridPos": {"h": 7, "w": 6, "x": 6, "y": 0}
+    },
+    {
+      "type": "gauge",
+      "title": "CPU del servidor",
+      "id": 3,
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}},
+      "gridPos": {"h": 7, "w": 6, "x": 12, "y": 0}
+    },
+    {
+      "type": "gauge",
+      "title": "Uso de disco raíz",
+      "id": 4,
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "100 * (1 - node_filesystem_avail_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\"})", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}},
+      "gridPos": {"h": 7, "w": 6, "x": 18, "y": 0}
+    },
+    {
+      "type": "timeseries",
+      "title": "Disponibilidad por target",
+      "id": 5,
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "up", "legendFormat": "{{job}} · {{instance}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"min": 0, "max": 1}},
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 7}
+    },
+    {
+      "type": "timeseries",
+      "title": "Contenedores: CPU",
+      "id": 6,
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "sum by(name) (rate(container_cpu_usage_seconds_total{name!=\"\"}[5m])) * 100", "legendFormat": "{{name}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 7}
+    },
+    {
+      "type": "timeseries",
+      "title": "JVM: memoria usada",
+      "id": 7,
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "sum(jvm_memory_used_bytes{application=\"daertech-platform\"})", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "bytes"}},
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 16}
+    },
+    {
+      "type": "logs",
+      "title": "Logs recientes del backend",
+      "id": 8,
+      "datasource": {"type": "loki", "uid": "loki"},
+      "targets": [{"expr": "{container=~\".*backend.*\"}", "refId": "A"}],
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 16}
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": ["daertech", "infrastructure", "monitoring"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "title": "DAERTECH Platform Overview",
+  "uid": "daertech-platform-overview",
+  "version": 1
+}
