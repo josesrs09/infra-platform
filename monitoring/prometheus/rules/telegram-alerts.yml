@@ -1,0 +1,150 @@
+groups:
+  - name: infrastructure-alerts
+    rules:
+      - alert: HostDown
+        expr: up{job="node"} == 0
+        for: 1m
+        labels: {severity: critical, source: prometheus}
+        annotations:
+          summary: "VPS no disponible"
+          description: "Node Exporter no responde desde hace más de 1 minuto."
+
+      - alert: HighCpuUsage
+        expr: 100 - (avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels: {severity: warning, source: prometheus}
+        annotations:
+          summary: "CPU alta en el VPS"
+          description: "Uso de CPU superior al 85% durante 5 minutos. Valor: {{ printf \"%.2f\" $value }}%."
+
+      - alert: CriticalCpuUsage
+        expr: 100 - (avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 2m
+        labels: {severity: critical, source: prometheus}
+        annotations:
+          summary: "CPU crítica en el VPS"
+          description: "Uso de CPU superior al 95%. Valor: {{ printf \"%.2f\" $value }}%."
+
+      - alert: HighMemoryUsage
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 85
+        for: 5m
+        labels: {severity: warning, source: prometheus}
+        annotations:
+          summary: "Memoria alta en el VPS"
+          description: "Uso de memoria superior al 85%. Valor: {{ printf \"%.2f\" $value }}%."
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) * 100 < 15
+        for: 5m
+        labels: {severity: warning, source: prometheus}
+        annotations:
+          summary: "Poco espacio en disco"
+          description: "La partición {{ $labels.mountpoint }} tiene menos de 15% disponible."
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) * 100 < 5
+        for: 2m
+        labels: {severity: critical, source: prometheus}
+        annotations:
+          summary: "Espacio en disco crítico"
+          description: "La partición {{ $labels.mountpoint }} tiene menos de 5% disponible."
+
+      - alert: ContainerDown
+        expr: time() - container_last_seen{name!=""} > 120
+        for: 1m
+        labels: {severity: critical, source: prometheus}
+        annotations:
+          summary: "Contenedor no disponible"
+          description: "El contenedor {{ $labels.name }} dejó de reportar métricas."
+
+      - alert: ContainerRestarting
+        expr: changes(container_start_time_seconds{name!=""}[15m]) > 2
+        for: 0m
+        labels: {severity: warning, source: prometheus}
+        annotations:
+          summary: "Contenedor reiniciándose"
+          description: "El contenedor {{ $labels.name }} se reinició más de dos veces en 15 minutos."
+
+  - name: database-alerts
+    rules:
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels: {severity: critical, source: prometheus}
+        annotations:
+          summary: "PostgreSQL no disponible"
+          description: "El exportador no puede conectarse a PostgreSQL."
+
+      - alert: MySQLDown
+        expr: mysql_up == 0
+        for: 1m
+        labels: {severity: critical, source: prometheus}
+        annotations:
+          summary: "MySQL no disponible"
+          description: "El exportador no puede conectarse a MySQL."
+
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels: {severity: critical, source: prometheus}
+        annotations:
+          summary: "Redis no disponible"
+          description: "El exportador no puede conectarse a Redis."
+
+      - alert: PostgreSQLConnectionsHigh
+        expr: sum(pg_stat_activity_count) > 80
+        for: 5m
+        labels: {severity: warning, source: prometheus}
+        annotations:
+          summary: "Muchas conexiones PostgreSQL"
+          description: "PostgreSQL mantiene más de 80 conexiones activas."
+
+      - alert: MySQLConnectionsHigh
+        expr: mysql_global_status_threads_connected > 80
+        for: 5m
+        labels: {severity: warning, source: prometheus}
+        annotations:
+          summary: "Muchas conexiones MySQL"
+          description: "MySQL mantiene más de 80 conexiones activas."
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.85 and redis_memory_max_bytes > 0
+        for: 5m
+        labels: {severity: warning, source: prometheus}
+        annotations:
+          summary: "Memoria Redis alta"
+          description: "Redis está utilizando más del 85% de su memoria configurada."
+
+  - name: rabbitmq-alerts
+    rules:
+      - alert: RabbitMQDown
+        expr: rabbitmq_up == 0
+        for: 1m
+        labels: {severity: critical, source: prometheus}
+        annotations:
+          summary: "RabbitMQ no disponible"
+          description: "RabbitMQ dejó de reportar métricas."
+
+      - alert: RabbitMQCriticalErrorsQueued
+        expr: rabbitmq_queue_messages{queue="app.errors.critical"} > 0
+        for: 1m
+        labels: {severity: critical, source: prometheus}
+        annotations:
+          summary: "Errores críticos pendientes en RabbitMQ"
+          description: "Hay {{ $value }} errores críticos pendientes de procesar."
+
+      - alert: RabbitMQDeadLetters
+        expr: rabbitmq_queue_messages{queue="app.errors.dead"} > 0
+        for: 1m
+        labels: {severity: critical, source: prometheus}
+        annotations:
+          summary: "Mensajes fallidos en RabbitMQ"
+          description: "La cola de mensajes fallidos contiene {{ $value }} eventos."
+
+      - alert: RabbitMQQueueGrowing
+        expr: deriv(rabbitmq_queue_messages[10m]) > 1
+        for: 10m
+        labels: {severity: warning, source: prometheus}
+        annotations:
+          summary: "Cola RabbitMQ creciendo"
+          description: "La cola {{ $labels.queue }} está creciendo de forma sostenida."
