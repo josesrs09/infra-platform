@@ -1,0 +1,21 @@
+services:
+  restic-backup:
+    image: restic/restic:0.17.3
+    container_name: infra-restic-backup
+    restart: "no"
+    environment:
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY}
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD}
+    volumes:
+      - ../:/source:ro
+      - ./repository:/repository
+      - ./cache:/root/.cache/restic
+    entrypoint: ["/bin/sh", "/scripts/backup.sh"]
+    volumes_from: []
+    configs:
+      - source: backup_script
+        target: /scripts/backup.sh
+
+configs:
+  backup_script:
+    file: ./scripts/backup.sh
