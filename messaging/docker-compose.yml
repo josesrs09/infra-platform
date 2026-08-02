@@ -1,0 +1,59 @@
+services:
+  emqx:
+    image: emqx/emqx:5.8.5
+    container_name: infra-emqx
+    restart: unless-stopped
+    environment:
+      EMQX_NODE_NAME: emqx@127.0.0.1
+      EMQX_DASHBOARD__DEFAULT_USERNAME: ${EMQX_DASHBOARD_USER}
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASSWORD}
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+    networks:
+      - messaging
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=infra_proxy
+      - traefik.http.routers.emqx.rule=Host(`${EMQX_HOST}`)
+      - traefik.http.routers.emqx.entrypoints=websecure
+      - traefik.http.routers.emqx.tls.certresolver=letsencrypt
+      - traefik.http.services.emqx.loadbalancer.server.port=18083
+
+  rabbitmq:
+    image: rabbitmq:4.0-management-alpine
+    container_name: infra-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - messaging
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=infra_proxy
+      - traefik.http.routers.rabbitmq.rule=Host(`${RABBITMQ_HOST}`)
+      - traefik.http.routers.rabbitmq.entrypoints=websecure
+      - traefik.http.routers.rabbitmq.tls.certresolver=letsencrypt
+      - traefik.http.services.rabbitmq.loadbalancer.server.port=15672
+
+volumes:
+  emqx_data:
+  emqx_log:
+  rabbitmq_data:
+
+networks:
+  messaging:
+    external: true
+    name: infra_messaging
+  proxy:
+    external: true
+    name: infra_proxy
