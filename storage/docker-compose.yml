@@ -8,7 +8,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
-      - minio_data:/data
+      - ./data/minio:/data
     networks:
       - storage
       - proxy
@@ -28,9 +28,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-
-volumes:
-  minio_data:
 
 networks:
   storage:
