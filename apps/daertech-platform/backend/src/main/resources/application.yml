@@ -41,7 +41,7 @@ management:
 info:
   app:
     name: DAERTECH Platform
-    version: 0.3.0
+    version: 0.4.0
 app:
   jwt:
     secret: ${APP_JWT_SECRET:CHANGE_ME_AT_LEAST_64_CHARACTERS}
@@ -49,11 +49,11 @@ app:
     refresh-days: ${APP_JWT_REFRESH_DAYS:7}
   config:
     encryption-key: ${APP_CONFIG_ENCRYPTION_KEY:CHANGE_ME_AT_LEAST_32_CHARACTERS}
-    apply:
-      root-directory: ${APP_CONFIG_ROOT_DIRECTORY:/opt/infra-platform/generated}
-      backup-directory: ${APP_CONFIG_BACKUP_DIRECTORY:/opt/infra-platform/backups/configuration}
-      restart-enabled: ${APP_CONFIG_RESTART_ENABLED:false}
-      allowed-services: ${APP_CONFIG_ALLOWED_SERVICES:postgres,redis,rabbitmq,mqtt,minio,traefik,prometheus,grafana,loki,alertmanager,backend,frontend}
+  configuration:
+    allowed-root: ${APP_CONFIG_ALLOWED_ROOT:/opt/daertech/config}
+  telegram:
+    bot-token: ${TELEGRAM_BOT_TOKEN:}
+    chat-id: ${TELEGRAM_CHAT_ID:}
   admin:
     name: ${APP_ADMIN_NAME:Administrator}
     email: ${APP_ADMIN_EMAIL:admin@daertechglobal.com}
