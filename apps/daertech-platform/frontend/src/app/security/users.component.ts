@@ -32,12 +32,17 @@ export class UsersComponent implements OnInit {
   form: UserPayload = { username:'', email:'', fullName:'', password:'', enabled:true, locked:false, roleIds:[] };
   constructor(private readonly service: SecurityAdminService) {}
   ngOnInit(): void { this.load(); this.service.roles().subscribe(r=>this.roles.set(r)); }
-  load(): void { this.service.users().subscribe({next:r=>this.users.set(r),error:e=>this.notify(e,true)}); }
-  save(): void { this.busy.set(true); const request=this.editingId?this.service.updateUser(this.editingId,this.form):this.service.createUser(this.form); request.subscribe({next:()=>{this.notify('Usuario guardado');this.reset();this.load();},error:e=>this.notify(e,true),complete:()=>this.busy.set(false)}); }
-  edit(user: PlatformUser): void { this.busy.set(true); this.service.user(user.id).subscribe({next:detail=>{this.editingId=detail.id;this.form={username:detail.username,email:detail.email,fullName:detail.full_name,password:'',enabled:detail.enabled,locked:detail.locked,roleIds:detail.roleIds||[]};this.busy.set(false);},error:e=>this.notify(e,true)}); }
-  remove(user: PlatformUser): void { if(!confirm(`Eliminar el usuario ${user.username}?`)) return; this.service.deleteUser(user.id).subscribe({next:()=>{this.notify('Usuario eliminado');this.load();},error:e=>this.notify(e,true)}); }
+  load(): void { this.service.users().subscribe({next:r=>this.users.set(r),error:(e:unknown)=>this.notify(e,true)}); }
+  save(): void {
+    this.busy.set(true);
+    const observer={next:()=>{this.notify('Usuario guardado');this.reset();this.load();},error:(e:unknown)=>this.notify(e,true),complete:()=>this.busy.set(false)};
+    if(this.editingId){this.service.updateUser(this.editingId,this.form).subscribe(observer);}
+    else{this.service.createUser(this.form).subscribe(observer);}
+  }
+  edit(user: PlatformUser): void { this.busy.set(true); this.service.user(user.id).subscribe({next:detail=>{this.editingId=detail.id;this.form={username:detail.username,email:detail.email,fullName:detail.full_name,password:'',enabled:detail.enabled,locked:detail.locked,roleIds:detail.roleIds||[]};this.busy.set(false);},error:(e:unknown)=>this.notify(e,true)}); }
+  remove(user: PlatformUser): void { if(!confirm(`Eliminar el usuario ${user.username}?`)) return; this.service.deleteUser(user.id).subscribe({next:()=>{this.notify('Usuario eliminado');this.load();},error:(e:unknown)=>this.notify(e,true)}); }
   reset(): void { this.editingId=null; this.form={username:'',email:'',fullName:'',password:'',enabled:true,locked:false,roleIds:[]}; }
   hasRole(id:string): boolean { return this.form.roleIds.includes(id); }
   toggleRole(id:string,checked:boolean): void { this.form.roleIds=checked?[...new Set([...this.form.roleIds,id])]:this.form.roleIds.filter(x=>x!==id); }
-  private notify(value:any,failed=false): void { this.failed.set(failed);this.message.set(typeof value==='string'?value:value?.error?.message||'Operación no completada');this.busy.set(false); }
+  private notify(value:unknown,failed=false): void { this.failed.set(failed);const error=value as {error?:{message?:string}};this.message.set(typeof value==='string'?value:error?.error?.message||'Operación no completada');this.busy.set(false); }
 }
