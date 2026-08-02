@@ -13,9 +13,7 @@ services:
     volumes:
       - ./data/emqx:/opt/emqx/data
       - ./logs/emqx:/opt/emqx/log
-    networks:
-      - messaging
-      - proxy
+    networks: [messaging, proxy]
     labels:
       - traefik.enable=true
       - traefik.docker.network=infra_proxy
@@ -29,15 +27,24 @@ services:
     image: rabbitmq:4.0-management-alpine
     container_name: infra-rabbitmq
     restart: unless-stopped
+    hostname: infra-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
+    ports:
+      - "5672:5672"
     volumes:
       - ./data/rabbitmq:/var/lib/rabbitmq
-    networks:
-      - messaging
-      - proxy
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    networks: [messaging, proxy, monitoring]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
     labels:
       - traefik.enable=true
       - traefik.docker.network=infra_proxy
@@ -54,3 +61,6 @@ networks:
   proxy:
     external: true
     name: infra_proxy
+  monitoring:
+    external: true
+    name: infra_monitoring
