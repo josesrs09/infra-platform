@@ -1,0 +1,33 @@
+groups:
+  - name: application-log-errors
+    interval: 1m
+    rules:
+      - alert: CriticalErrorsInLogs
+        expr: sum(count_over_time({container_name=~".+"} |~ "(?i)(fatal|panic|critical|out of memory|segmentation fault)" [2m])) by (container_name) > 0
+        for: 0m
+        labels:
+          severity: critical
+          source: loki
+        annotations:
+          summary: "Error crítico detectado en logs"
+          description: "El contenedor {{ $labels.container_name }} registró errores críticos en los últimos 2 minutos."
+
+      - alert: ApplicationErrorsInLogs
+        expr: sum(count_over_time({container_name=~".+"} |~ "(?i)(error|exception|traceback|failed|failure)" [5m])) by (container_name) >= 3
+        for: 1m
+        labels:
+          severity: warning
+          source: loki
+        annotations:
+          summary: "Errores repetidos en logs"
+          description: "El contenedor {{ $labels.container_name }} registró al menos 3 errores en 5 minutos."
+
+      - alert: AuthenticationFailuresInLogs
+        expr: sum(count_over_time({container_name=~".+"} |~ "(?i)(authentication failed|invalid password|unauthorized|access denied|login failed)" [5m])) by (container_name) >= 5
+        for: 1m
+        labels:
+          severity: warning
+          source: loki
+        annotations:
+          summary: "Fallos de autenticación detectados"
+          description: "El contenedor {{ $labels.container_name }} registró múltiples fallos de autenticación."
