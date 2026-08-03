@@ -1,19 +1,19 @@
-# Implementación completa en producción
+# Implementación completa en producción — `daertechglobal.com`
 
-Esta guía describe el despliegue de `infra-platform` en un servidor Debian, la sustitución de datos de ejemplo por valores reales, la validación y las pruebas operativas.
+Esta guía describe el despliegue de `infra-platform` en Debian utilizando el dominio oficial `daertechglobal.com`.
+
+Para la preparación detallada del sistema operativo, firewall, Docker, DNS y secretos consulte también [`CONFIGURACION_VPS_DAERTECHGLOBAL.md`](CONFIGURACION_VPS_DAERTECHGLOBAL.md).
 
 ## 1. Requisitos del servidor
 
-Recomendado para una instalación inicial:
-
 - Debian 12 o superior.
 - 8 CPU, 16 GB RAM y 300 GB SSD como base.
+- 12–16 CPU, 32 GB RAM y 500 GB SSD recomendados para todos los módulos.
 - IP pública fija.
 - DNS administrable.
-- Puertos 22, 25, 80, 443, 465, 587, 993, 1883, 2222, 5672 y 8883 según los servicios habilitados.
-- PTR/rDNS del IP apuntando al host de correo.
-
-Instale Docker Engine, Docker Compose v2, Git, curl, jq, apache2-utils, rclone y Restic.
+- PTR/rDNS de la IP hacia `mail.daertechglobal.com` si se habilita correo.
+- Docker Engine y Docker Compose v2.
+- Git, curl, jq, apache2-utils, rclone y Restic.
 
 ```bash
 sudo apt update
@@ -27,58 +27,76 @@ sudo mkdir -p /opt/infra-platform
 sudo chown "$USER":"$USER" /opt/infra-platform
 git clone https://github.com/josesrs09/infra-platform.git /opt/infra-platform
 cd /opt/infra-platform
+git checkout feature/daertech-platform-foundation
 cp .env.example .env
+chmod 600 .env
 sudo ./scripts/bootstrap.sh
 ```
 
-## 3. Sustitución de datos reales
+Para producción debe utilizarse un tag o commit aprobado y registrar el SHA:
 
-Edite `/opt/infra-platform/.env`. Nunca publique este archivo en Git.
-
-### 3.1 Dominio principal
-
-Cambie:
-
-```env
-DOMAIN=example.com
-ACME_EMAIL=admin@example.com
+```bash
+git rev-parse HEAD
 ```
 
-Por valores reales, por ejemplo:
+## 3. Dominio principal
 
-```env
+Configure en `/opt/infra-platform/.env`:
+
+```dotenv
 DOMAIN=daertechglobal.com
 ACME_EMAIL=infraestructura@daertechglobal.com
 ```
 
-### 3.2 Subdominios
+## 4. Subdominios oficiales
 
-Cree registros DNS tipo A hacia la IP pública:
+Cree registros DNS tipo `A` hacia la IP pública del VPS:
 
 ```text
-infra.dominio.com
-traefik.dominio.com
-portainer.dominio.com
-uptime.dominio.com
-prometheus.dominio.com
-grafana.dominio.com
-logs.dominio.com
-s3.dominio.com
-minio.dominio.com
-mqtt.dominio.com
-rabbitmq.dominio.com
-registry.dominio.com
-git.dominio.com
-pgadmin.dominio.com
-phpmyadmin.dominio.com
-redis.dominio.com
-adminer.dominio.com
-mail.dominio.com
+infra.daertechglobal.com
+traefik.daertechglobal.com
+portainer.daertechglobal.com
+uptime.daertechglobal.com
+prometheus.daertechglobal.com
+grafana.daertechglobal.com
+logs.daertechglobal.com
+s3.daertechglobal.com
+minio.daertechglobal.com
+mqtt.daertechglobal.com
+rabbitmq.daertechglobal.com
+registry.daertechglobal.com
+git.daertechglobal.com
+pgadmin.daertechglobal.com
+phpmyadmin.daertechglobal.com
+redis.daertechglobal.com
+adminer.daertechglobal.com
+mail.daertechglobal.com
+api-infra.daertechglobal.com
 ```
 
-Después reemplace todos los hosts `*.example.com` en `.env`.
+Variables correspondientes:
 
-### 3.3 Contraseña general de Traefik
+```dotenv
+TRAEFIK_DASHBOARD_HOST=traefik.daertechglobal.com
+HOMEPAGE_HOST=infra.daertechglobal.com
+PORTAINER_HOST=portainer.daertechglobal.com
+UPTIME_HOST=uptime.daertechglobal.com
+PROMETHEUS_HOST=prometheus.daertechglobal.com
+GRAFANA_HOST=grafana.daertechglobal.com
+DOZZLE_HOST=logs.daertechglobal.com
+MINIO_HOST=s3.daertechglobal.com
+MINIO_CONSOLE_HOST=minio.daertechglobal.com
+EMQX_HOST=mqtt.daertechglobal.com
+RABBITMQ_HOST=rabbitmq.daertechglobal.com
+REGISTRY_HOST=registry.daertechglobal.com
+GITEA_HOST=git.daertechglobal.com
+PGADMIN_HOST=pgadmin.daertechglobal.com
+PHPMYADMIN_HOST=phpmyadmin.daertechglobal.com
+REDIS_COMMANDER_HOST=redis.daertechglobal.com
+ADMINER_HOST=adminer.daertechglobal.com
+```
+
+## 5. Autenticación de Traefik
 
 Genere un hash bcrypt:
 
@@ -86,73 +104,69 @@ Genere un hash bcrypt:
 htpasswd -nbB admin 'CONTRASENA_LARGA_Y_UNICA'
 ```
 
-Escape cada `$` como `$$` cuando el valor se use directamente en etiquetas Compose. Guarde el resultado en:
+Guárdelo en:
 
-```env
+```dotenv
 TRAEFIK_DASHBOARD_AUTH=admin:HASH_GENERADO
 ```
 
-Actualice también `proxy/dynamic/middlewares.yml` con el hash real o use el script de renderización si está habilitado.
+Escape cada `$` como `$$` cuando el valor se utilice directamente dentro de etiquetas Compose.
 
-### 3.4 Credenciales de bases de datos
+## 6. Credenciales de bases de datos
 
 Use contraseñas independientes:
 
-```env
+```dotenv
 POSTGRES_DB=platform
 POSTGRES_USER=platform_admin
-POSTGRES_PASSWORD=VALOR_REAL
+POSTGRES_PASSWORD=<SECRETO_POSTGRES>
 MYSQL_DATABASE=platform
 MYSQL_USER=platform_admin
-MYSQL_PASSWORD=VALOR_REAL
-MYSQL_ROOT_PASSWORD=VALOR_REAL_DISTINTO
-REDIS_PASSWORD=VALOR_REAL
+MYSQL_PASSWORD=<SECRETO_MYSQL>
+MYSQL_ROOT_PASSWORD=<SECRETO_MYSQL_ROOT>
+REDIS_PASSWORD=<SECRETO_REDIS>
 ```
 
-No reutilice la contraseña del administrador web.
+No reutilice contraseñas administrativas.
 
-### 3.5 Servicios web
+## 7. Servicios web
 
-Cambie como mínimo:
+Configure al menos:
 
-```env
-GRAFANA_ADMIN_PASSWORD=VALOR_REAL
-PGADMIN_EMAIL=infraestructura@dominio.com
-PGADMIN_PASSWORD=VALOR_REAL
-REDIS_COMMANDER_PASSWORD=VALOR_REAL
-MINIO_ROOT_PASSWORD=VALOR_REAL
-EMQX_DASHBOARD_PASSWORD=VALOR_REAL
-RABBITMQ_PASSWORD=VALOR_REAL
-GITEA_DB_PASSWORD=VALOR_REAL
-RESTIC_PASSWORD=VALOR_REAL
+```dotenv
+GRAFANA_ADMIN_PASSWORD=<SECRETO_GRAFANA>
+PGADMIN_EMAIL=infraestructura@daertechglobal.com
+PGADMIN_PASSWORD=<SECRETO_PGADMIN>
+REDIS_COMMANDER_PASSWORD=<SECRETO_REDIS_COMMANDER>
+MINIO_ROOT_PASSWORD=<SECRETO_MINIO>
+EMQX_DASHBOARD_PASSWORD=<SECRETO_EMQX>
+RABBITMQ_PASSWORD=<SECRETO_RABBITMQ>
+GITEA_DB_PASSWORD=<SECRETO_GITEA>
+RESTIC_PASSWORD=<SECRETO_RESTIC>
 ```
 
-### 3.6 Telegram
+## 8. Telegram
 
-Cree el bot con BotFather, agregue el bot al chat y configure:
-
-```env
-TELEGRAM_BOT_TOKEN=TOKEN_REAL
-TELEGRAM_CHAT_ID=ID_REAL
+```dotenv
+TELEGRAM_BOT_TOKEN=<TOKEN_REAL>
+TELEGRAM_CHAT_ID=<ID_REAL>
 ```
 
-Prueba directa:
+Prueba:
 
 ```bash
 curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
   -d chat_id="${TELEGRAM_CHAT_ID}" \
-  --data-urlencode text="Prueba infra-platform"
+  --data-urlencode text="Prueba infra-platform daertechglobal.com"
 ```
 
-### 3.7 Dropbox con rclone
-
-Configure el remoto:
+## 9. Dropbox con Rclone
 
 ```bash
 rclone config
 ```
 
-Seleccione Dropbox y guarde el archivo en:
+Guarde la configuración en:
 
 ```text
 /opt/infra-platform/backups/rclone/rclone.conf
@@ -160,7 +174,7 @@ Seleccione Dropbox y guarde el archivo en:
 
 Variables:
 
-```env
+```dotenv
 RCLONE_DROPBOX_REMOTE=dropbox
 RCLONE_DROPBOX_PATH=infra-platform/backups
 ```
@@ -171,50 +185,50 @@ Prueba:
 rclone --config backups/rclone/rclone.conf lsd dropbox:
 ```
 
-### 3.8 Correo
+## 10. Correo
 
 Configure:
 
-```env
+```dotenv
 MAIL_HOSTNAME=mail
-MAIL_DOMAIN=dominio.com
-POSTMASTER_ADDRESS=postmaster@dominio.com
+MAIL_DOMAIN=daertechglobal.com
+POSTMASTER_ADDRESS=postmaster@daertechglobal.com
 ```
 
 DNS requerido:
 
-- A: `mail.dominio.com` hacia la IP.
-- MX: dominio hacia `mail.dominio.com`.
-- PTR/rDNS: IP hacia `mail.dominio.com`.
-- SPF, DKIM y DMARC después de generar DKIM.
+- `A`: `mail.daertechglobal.com` hacia la IP pública.
+- `MX`: `daertechglobal.com` hacia `mail.daertechglobal.com`.
+- `PTR/rDNS`: IP pública hacia `mail.daertechglobal.com`.
+- SPF autorizando la IP y el host MX.
+- DKIM generado por el servidor de correo.
+- DMARC inicialmente en modo de monitoreo y después `quarantine` o `reject`.
 
 Cree una cuenta:
 
 ```bash
-./mail/scripts/add-account.sh usuario@dominio.com 'CONTRASENA_REAL'
+./mail/scripts/add-account.sh usuario@daertechglobal.com 'CONTRASENA_REAL'
 ```
 
-## 4. Validación integral
-
-Ejecute:
+## 11. Validación integral
 
 ```bash
 cd /opt/infra-platform
 ./scripts/validate.sh
 ```
 
-La validación revisa:
+La validación debe revisar:
 
-- Todos los `docker-compose.yml`.
-- Sintaxis Bash.
-- JSON y YAML.
-- Variables obligatorias.
-- Posibles credenciales débiles.
-- Uso exclusivo de carpetas locales para persistencia.
+- todos los archivos `docker-compose.yml`;
+- sintaxis Bash;
+- JSON y YAML;
+- variables obligatorias;
+- credenciales débiles o valores `CHANGE_ME`;
+- persistencia mediante carpetas locales.
 
 No continúe a producción mientras exista un resultado `FAIL`.
 
-## 5. Orden de despliegue
+## 12. Orden de despliegue
 
 ```bash
 ./scripts/bootstrap.sh
@@ -231,25 +245,23 @@ docker compose --env-file .env -f ci-cd/docker-compose.yml up -d
 docker compose --env-file .env -f mail/docker-compose.yml up -d
 ```
 
-Verifique:
+Verifique después de cada módulo:
 
 ```bash
 docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 ```
 
-## 6. Instrumentar una aplicación
+## 13. Instrumentar aplicaciones
 
-1. Exponga `/health` y `/metrics`.
-2. Use las métricas y etiquetas documentadas en `examples/http-metrics/README.md`.
-3. Conecte el contenedor a `infra_monitoring`.
-4. Registre el target en `monitoring/prometheus/targets/applications.yml`.
-5. Recargue Prometheus:
+1. Exponer `/health` y `/metrics`.
+2. Usar las métricas documentadas en `examples/http-metrics/README.md`.
+3. Conectar el contenedor a `infra_monitoring`.
+4. Registrar el target en `monitoring/prometheus/targets/applications.yml`.
+5. Recargar Prometheus.
 
 ```bash
 curl -X POST http://localhost:9090/-/reload
 ```
-
-Ejemplo de red Compose:
 
 ```yaml
 networks:
@@ -258,9 +270,13 @@ networks:
     name: infra_monitoring
 ```
 
-## 7. Reportar errores por RabbitMQ
+## 14. Reportar errores por RabbitMQ
 
-Publique en el exchange `app.errors`.
+Exchange:
+
+```text
+app.errors
+```
 
 Routing keys:
 
@@ -270,14 +286,14 @@ nombre-app.warning
 nombre-app.info
 ```
 
-Mensaje JSON recomendado:
+Payload recomendado:
 
 ```json
 {
   "application": "api-facturacion",
   "environment": "production",
   "severity": "critical",
-  "timestamp": "2026-08-02T14:00:00-04:00",
+  "timestamp": "2026-08-03T10:00:00-04:00",
   "message": "Error procesando factura",
   "correlationId": "factura-123",
   "exception": "TimeoutException",
@@ -286,20 +302,11 @@ Mensaje JSON recomendado:
 }
 ```
 
-El puente `error-telegram-bridge` reenvía los eventos a Telegram.
-
-## 8. Backups y Dropbox
-
-Prueba manual:
+## 15. Backups y Dropbox
 
 ```bash
 ./backups/scripts/backup-databases.sh
 ./backups/scripts/upload-dropbox.sh
-```
-
-Instale programación:
-
-```bash
 sudo ./scripts/install-backup-cron.sh
 ```
 
@@ -311,63 +318,47 @@ tail -f backups/data/database-backup.log
 tail -f backups/data/dropbox-upload.log
 ```
 
-Debe recibir alertas Telegram al iniciar, finalizar o fallar cada proceso.
+## 16. Pruebas posteriores
 
-## 9. Pruebas posteriores
+- Abrir `https://infra.daertechglobal.com`.
+- Validar `https://traefik.daertechglobal.com` con autenticación.
+- Validar `https://grafana.daertechglobal.com`.
+- Validar Telegram.
+- Detener una aplicación registrada y confirmar alerta.
+- Publicar un evento `critical` en RabbitMQ.
+- Generar una línea `ERROR` y comprobar Loki.
+- Ejecutar backup manual y validar Dropbox.
+- Restaurar una base en un ambiente aislado.
 
-### Telegram
+## 17. Migración a otro VPS
 
-- Simule un HTTP 500 varias veces.
-- Detenga una aplicación registrada.
-- Publique un mensaje `critical` en RabbitMQ.
-- Genere una línea `ERROR` en logs.
-- Ejecute un backup manual.
+1. Detener escrituras.
+2. Ejecutar dumps y Restic.
+3. Subir copia a Dropbox.
+4. Clonar el mismo tag o commit en el nuevo VPS.
+5. Transferir `.env`, `rclone.conf` y secretos por canal seguro.
+6. Restaurar carpetas persistentes.
+7. Restaurar PostgreSQL y MySQL.
+8. Cambiar los registros DNS hacia la nueva IP.
+9. Actualizar PTR/rDNS si se mueve el correo.
+10. Validar certificados, correo, Telegram, métricas y alertas.
+11. Mantener el VPS anterior disponible durante la ventana de reversión.
 
-### Métricas
+Nunca copie una base activa a nivel de archivos sin detenerla o sin utilizar un snapshot consistente.
 
-En Prometheus compruebe:
+## 18. Checklist de producción
 
-```promql
-sum by (application) (rate(http_requests_total[5m]))
-```
-
-```promql
-sum by (application) (rate(http_requests_total{status_code=~"5.."}[5m]))
-```
-
-```promql
-histogram_quantile(0.95, sum by (le, application) (rate(http_request_duration_seconds_bucket[5m])))
-```
-
-## 10. Migración y cambios de datos
-
-Para mover la instalación a otro VPS:
-
-1. Detenga escrituras de aplicaciones.
-2. Ejecute backup lógico y Restic.
-3. Cargue a Dropbox.
-4. Clone el repositorio en el nuevo VPS.
-5. Copie `.env`, `backups/rclone/rclone.conf` y secretos por canal seguro.
-6. Restaure las carpetas locales o use Restic.
-7. Restaure PostgreSQL/MySQL con `restore-database.sh`.
-8. Cambie DNS hacia la nueva IP.
-9. Compruebe certificados, correo y Telegram.
-10. Mantenga el servidor anterior detenido pero disponible durante la ventana de reversión.
-
-Nunca copie una base activa a nivel de archivos sin detenerla o sin usar un mecanismo consistente de snapshot.
-
-## 11. Checklist de producción
-
-- [ ] DNS y PTR correctos.
-- [ ] `.env` sin `CHANGE_ME` ni `example.com`.
+- [ ] DNS de `daertechglobal.com` configurado.
+- [ ] PTR/rDNS correcto para `mail.daertechglobal.com`.
+- [ ] `.env` sin `CHANGE_ME`.
 - [ ] Hash bcrypt real en Traefik.
 - [ ] Telegram probado.
 - [ ] Dropbox probado.
 - [ ] Backup y restauración probados.
 - [ ] Todas las consolas con HTTPS.
-- [ ] RabbitMQ sin usuario guest.
-- [ ] Bases de datos no publicadas directamente a Internet.
+- [ ] RabbitMQ sin usuario `guest` remoto.
+- [ ] PostgreSQL, MySQL y Redis no publicados a Internet.
 - [ ] Métricas por aplicación visibles.
 - [ ] Alertas HTTP, logs y colas probadas.
 - [ ] `./scripts/validate.sh` sin fallos.
-- [ ] Evidencia de prueba y procedimiento de reversión documentados.
+- [ ] Procedimiento de reversión documentado.

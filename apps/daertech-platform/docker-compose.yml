@@ -1,0 +1,96 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [platform]
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "PING"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [platform]
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      APP_JWT_SECRET: ${JWT_SECRET}
+      APP_JWT_ACCESS_MINUTES: ${JWT_ACCESS_MINUTES:-15}
+      APP_JWT_REFRESH_DAYS: ${JWT_REFRESH_DAYS:-7}
+      APP_CONFIG_ENCRYPTION_KEY: ${CONFIG_ENCRYPTION_KEY}
+      APP_CONFIG_ALLOWED_ROOT: /opt/daertech/config
+      APP_DEPLOYMENT_WORKSPACE_ROOT: /opt/infra-platform/workspaces
+      APP_DEPLOYMENT_EXECUTION_ENABLED: ${DEPLOYMENT_EXECUTION_ENABLED:-false}
+      APP_DEPLOYMENT_COMMAND_TIMEOUT_SECONDS: ${DEPLOYMENT_COMMAND_TIMEOUT_SECONDS:-900}
+      APP_DEPLOYMENT_TRAEFIK_DYNAMIC_ROOT: ${DEPLOYMENT_TRAEFIK_DYNAMIC_ROOT:-/opt/infra-platform/traefik/dynamic}
+      APP_MONITORING_ALERTMANAGER_WEBHOOK_TOKEN: ${MONITORING_ALERTMANAGER_WEBHOOK_TOKEN}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      APP_ADMIN_NAME: ${ADMIN_NAME}
+      APP_ADMIN_EMAIL: ${ADMIN_EMAIL}
+      APP_ADMIN_USERNAME: ${ADMIN_USERNAME}
+      APP_ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    group_add:
+      - "${DOCKER_GID:-999}"
+    volumes:
+      - ./generated:/opt/daertech/config/generated
+      - ./backups/configuration:/opt/daertech/config/backups
+      - ./managed-config:/opt/daertech/config/managed
+      - ./workspaces:/opt/infra-platform/workspaces
+      - ${TRAEFIK_DYNAMIC_HOST_DIR:-./traefik/dynamic}:/opt/infra-platform/traefik/dynamic
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${SSH_DEPLOY_KEYS_DIR:-./secrets/ssh}:/home/app/.ssh:ro
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    networks: [platform]
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_URL: ${PUBLIC_API_URL:-http://localhost:8080}
+    restart: unless-stopped
+    depends_on: [backend]
+    ports:
+      - "${FRONTEND_PORT:-4200}:80"
+    networks: [platform]
+
+networks:
+  platform:
+    driver: bridge

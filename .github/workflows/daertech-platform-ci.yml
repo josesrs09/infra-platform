@@ -1,0 +1,171 @@
+name: DAERTECH Platform CI
+
+on:
+  pull_request:
+    paths:
+      - 'apps/daertech-platform/**'
+      - '.github/workflows/daertech-platform-ci.yml'
+  push:
+    branches:
+      - main
+      - feature/daertech-platform-foundation
+    paths:
+      - 'apps/daertech-platform/**'
+      - '.github/workflows/daertech-platform-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend Java 21
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/daertech-platform/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Validate Flyway migration versions
+        run: |
+          versions=$(find src/main/resources/db/migration -maxdepth 1 -type f -name 'V*__*.sql' -printf '%f\n' | sed -E 's/^V([^_]+(_[0-9]+)*)__.*$/\1/' | sort)
+          duplicates=$(printf '%s\n' "$versions" | uniq -d)
+          if [ -n "$duplicates" ]; then
+            echo "Duplicate Flyway versions:"
+            echo "$duplicates"
+            exit 1
+          fi
+      - name: Test and package backend
+        run: mvn -B verify
+
+  database-startup:
+    name: Clean PostgreSQL startup and auth smoke test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: daertech_platform
+          POSTGRES_USER: daertech
+          POSTGRES_PASSWORD: daertech_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U daertech -d daertech_platform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    defaults:
+      run:
+        working-directory: apps/daertech-platform/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Package application
+        run: mvn -B -DskipTests package
+      - name: Start application, validate health and authenticate
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/daertech_platform
+          SPRING_DATASOURCE_USERNAME: daertech
+          SPRING_DATASOURCE_PASSWORD: daertech_ci_password
+          SPRING_DATA_REDIS_HOST: localhost
+          SPRING_DATA_REDIS_PORT: '6379'
+          APP_JWT_SECRET: CI_ONLY_JWT_SECRET_WITH_MORE_THAN_SIXTY_FOUR_CHARACTERS_1234567890
+          APP_CONFIG_ENCRYPTION_KEY: CI_ONLY_CONFIG_ENCRYPTION_KEY_32_CHARS_MINIMUM_1234567890
+          APP_ADMIN_USERNAME: admin
+          APP_ADMIN_PASSWORD: CI_only_Admin_2026_Strong
+          APP_MONITORING_ALERTMANAGER_WEBHOOK_TOKEN: CI_ONLY_ALERTMANAGER_TOKEN_64_CHARACTERS_MINIMUM_12345678901234567890
+        run: |
+          java -jar target/*.jar > application.log 2>&1 &
+          pid=$!
+          trap 'kill $pid 2>/dev/null || true; cat application.log' EXIT
+          healthy=false
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:8080/api/v1/actuator/health > health.json; then
+              cat health.json
+              healthy=true
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              echo "Application terminated before becoming healthy"
+              exit 1
+            fi
+            sleep 2
+          done
+          if [ "$healthy" != "true" ]; then
+            echo "Application did not become healthy"
+            exit 1
+          fi
+
+          login_status=$(curl --silent --show-error \
+            -o login.json \
+            -w '%{http_code}' \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"admin","password":"CI_only_Admin_2026_Strong"}' \
+            http://localhost:8080/api/v1/auth/login)
+          echo "Login HTTP status: $login_status"
+          cat login.json
+          test "$login_status" = "200"
+
+          access_token=$(python3 -c 'import json; print(json.load(open("login.json"))["accessToken"])')
+          test -n "$access_token"
+
+          users_status=$(curl --silent --show-error \
+            -o users.json \
+            -w '%{http_code}' \
+            -H "Authorization: Bearer $access_token" \
+            http://localhost:8080/api/v1/admin/users)
+          echo "Users HTTP status: $users_status"
+          cat users.json
+          test "$users_status" = "200"
+          python3 -c 'import json; data=json.load(open("users.json")); assert isinstance(data, list); assert any(u.get("username") == "admin" for u in data)'
+
+  frontend:
+    name: Frontend Angular 20
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/daertech-platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/daertech-platform/frontend/package.json
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build frontend
+        run: npm run build
+
+  compose:
+    name: Docker Compose validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/daertech-platform
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare environment
+        run: cp .env.example .env
+      - name: Validate platform Compose
+        run: docker compose config --quiet
+      - name: Validate monitoring Compose
+        run: docker compose -f docker-compose.monitoring.yml config --quiet
