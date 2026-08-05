@@ -25,7 +25,7 @@ scrape_configs:
 
   - job_name: traefik
     static_configs:
-      - targets: ["infra-traefik:8082"]
+      - targets: ["infra-traefik:8080"]
 
   - job_name: postgres
     static_configs:
@@ -38,6 +38,20 @@ scrape_configs:
   - job_name: redis
     static_configs:
       - targets: ["redis-exporter:9121"]
+
+  - job_name: rabbitmq
+    static_configs:
+      - targets: ["infra-rabbitmq:15692"]
+
+  - job_name: emqx
+    metrics_path: /api/v5/prometheus/stats
+    static_configs:
+      - targets: ["infra-emqx:18083"]
+
+  - job_name: minio
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs:
+      - targets: ["infra-minio:9000"]
 
   - job_name: applications
     metrics_path: /metrics
@@ -52,7 +66,9 @@ scrape_configs:
       module: [http_2xx]
     static_configs:
       - targets:
-          - https://${DOMAIN}
+          - https://daertechglobal.com
+          - https://infra.daertechglobal.com
+          - https://grafana.daertechglobal.com
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
