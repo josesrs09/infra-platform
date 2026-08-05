@@ -1,0 +1,29 @@
+groups:
+  - name: application-log-errors
+    interval: 1m
+    rules:
+      - alert: ApplicationCriticalErrorsDetected
+        expr: |
+          sum by (container) (
+            count_over_time({container=~".+"} |~ "(?i)(critical|fatal|panic|unhandled exception)" [5m])
+          ) > 0
+        for: 1m
+        labels:
+          severity: critical
+          source: loki
+        annotations:
+          summary: "Errores críticos detectados en {{ $labels.container }}"
+          description: "Loki detectó mensajes critical, fatal, panic o unhandled exception durante los últimos 5 minutos."
+
+      - alert: ApplicationErrorBurstDetected
+        expr: |
+          sum by (container) (
+            count_over_time({container=~".+"} |~ "(?i)(error|exception|http 5[0-9]{2})" [5m])
+          ) > 5
+        for: 2m
+        labels:
+          severity: warning
+          source: loki
+        annotations:
+          summary: "Ráfaga de errores en {{ $labels.container }}"
+          description: "Se detectaron más de cinco errores o respuestas HTTP 5xx en cinco minutos."
