@@ -27,3 +27,23 @@ services:
       - ./restore:/restore
       - ./scripts/restore.sh:/scripts/restore.sh:ro
     entrypoint: ["/bin/sh", "/scripts/restore.sh"]
+
+  rclone-upload:
+    image: rclone/rclone:latest
+    container_name: infra-rclone-upload
+    restart: "no"
+    profiles: ["upload"]
+    environment:
+      RCLONE_DROPBOX_REMOTE: ${RCLONE_DROPBOX_REMOTE:-dropbox}
+      RCLONE_DROPBOX_PATH: ${RCLONE_DROPBOX_PATH:-infra-platform/backups}
+    volumes:
+      - ./data:/backup-data:ro
+      - ./repository:/restic-repository:ro
+      - ./rclone/rclone.conf:/config/rclone/rclone.conf:ro
+    entrypoint: ["/bin/sh", "-ec"]
+    command: |
+      test -s /config/rclone/rclone.conf
+      rclone sync /backup-data "$${RCLONE_DROPBOX_REMOTE}:$${RCLONE_DROPBOX_PATH}/data" \
+        --config /config/rclone/rclone.conf --create-empty-src-dirs --checksum --transfers 4 --checkers 8
+      rclone sync /restic-repository "$${RCLONE_DROPBOX_REMOTE}:$${RCLONE_DROPBOX_PATH}/restic" \
+        --config /config/rclone/rclone.conf --create-empty-src-dirs --checksum --transfers 4 --checkers 8
