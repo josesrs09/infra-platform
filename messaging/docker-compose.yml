@@ -8,12 +8,14 @@ services:
       EMQX_DASHBOARD__DEFAULT_USERNAME: ${EMQX_DASHBOARD_USER}
       EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASSWORD}
     ports:
-      - "1883:1883"
       - "8883:8883"
+    expose:
+      - "1883"
+      - "18083"
     volumes:
       - ./data/emqx:/opt/emqx/data
       - ./logs/emqx:/opt/emqx/log
-    networks: [messaging, proxy]
+    networks: [messaging, proxy, monitoring]
     labels:
       - traefik.enable=true
       - traefik.docker.network=infra_proxy
@@ -32,8 +34,10 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
-    ports:
-      - "5672:5672"
+    expose:
+      - "5672"
+      - "15672"
+      - "15692"
     volumes:
       - ./data/rabbitmq:/var/lib/rabbitmq
       - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
