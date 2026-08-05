@@ -35,6 +35,7 @@ services:
       GITEA__server__SSH_DOMAIN: ${GITEA_HOST}
       GITEA__server__SSH_PORT: ${GITEA_SSH_PORT}
       GITEA__service__DISABLE_REGISTRATION: "true"
+      GITEA__actions__ENABLED: "true"
       USER_UID: "1000"
       USER_GID: "1000"
       TZ: ${TZ}
@@ -55,6 +56,23 @@ services:
       - traefik.http.routers.gitea.tls.certresolver=letsencrypt
       - traefik.http.routers.gitea.middlewares=admin-chain@file
       - traefik.http.services.gitea.loadbalancer.server.port=3000
+
+  gitea-runner:
+    image: gitea/act_runner:latest
+    container_name: infra-gitea-runner
+    restart: unless-stopped
+    depends_on:
+      - gitea
+    environment:
+      GITEA_INSTANCE_URL: http://infra-gitea:3000
+      GITEA_RUNNER_REGISTRATION_TOKEN: ${GITEA_RUNNER_REGISTRATION_TOKEN}
+      GITEA_RUNNER_NAME: ${GITEA_RUNNER_NAME:-infra-runner-01}
+      GITEA_RUNNER_LABELS: ${GITEA_RUNNER_LABELS:-ubuntu-latest:docker://node:22-bookworm}
+    volumes:
+      - ./data/act-runner:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - backend
 
 networks:
   backend:
